@@ -28,7 +28,7 @@ dependencies = [
     "tqdm",
     "typing_extensions"
 ]
-license = "MIT"
-license-files = ["LICEN[CS]E*"]
+license = {text = "MIT"}
+
 
 
