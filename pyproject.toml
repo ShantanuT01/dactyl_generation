@@ -26,7 +26,8 @@ dependencies = [
     "python-dotenv",
     "Requests",
     "tqdm",
-    "typing_extensions"
+    "typing_extensions",
+    "google-generativeai"
 ]
 license = {text = "MIT"}
 
