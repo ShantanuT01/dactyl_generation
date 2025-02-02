@@ -69,9 +69,9 @@ def request_message_batch(system_prompt, examples, examples_size, model, max_com
     message_batch = ANTHROPIC_CLIENT.messages.batches.create(requests=requests)
 
     return {
-        "batch_id": message_batch.id,
+        BATCH_ID: message_batch.id,
         PROMPTS: requests,
-        API_CALL: "anthropic"
+        API_CALL: ANTHROPIC
     }
 
 
@@ -83,7 +83,7 @@ def get_batch_job_output(file_path):
     """
     with open(file_path) as f:
         data = json.load(f)
-    message_id = data["batch_id"]
+    message_id = data[BATCH_ID]
     response = requests.get(f"https://api.anthropic.com/v1/messages/batches/{message_id}/results",headers=API_HEADERS)
     lines = response.text.splitlines()
     objects = list()

@@ -12,15 +12,15 @@ def generate_texts_using_batch(model, human_dataframe, output_path, system_promp
     examples = list()
     for _ in range(number_of_generations):
         examples.extend(human_dataframe[TEXT].sample(few_shot_size).to_list())
-    if model.find("claude") >= 0:
+    if model.find(CLAUDE) >= 0:
         parameters = anthropic_generation.request_message_batch(system_prompt, examples, few_shot_size, model, max_completion_tokens=max_completion_tokens)
         with open(output_path, 'w+') as file:
             json.dump(parameters, file, indent=4)
-    elif model.find("gpt") >= 0:
+    elif model.find(GPT) >= 0:
         parameters = openai_generation.create_batch_job(system_prompt, examples, few_shot_size, model, max_completion_tokens)
         with open(output_path, 'w+') as file:
             json.dump(parameters, file, indent=4)
-    elif model.find("mistral") >= 0:
+    elif model.find(MISTRAL) >= 0:
         file_name = next(tempfile._get_candidate_names())
         file_name = f"{file_name}.jsonl"
         parameters = mistral_generation.create_batch_job(file_name,system_prompt, examples, few_shot_size, model, max_tokens=max_completion_tokens)
@@ -34,11 +34,11 @@ def get_batch_job_results(file_path, output_path):
     with open(file_path) as file:
         data = json.load(file)
     api_call = data[API_CALL]
-    if api_call == "anthropic":
+    if api_call == ANTHROPIC:
         df = anthropic_generation.get_batch_job_output(file_path)
-    elif api_call == "mistral":
+    elif api_call == MISTRAL:
         df = mistral_generation.get_batch_job_output(file_path)
-    elif api_call == "openai":
+    elif api_call == OPENAI:
         df = openai_generation.get_batch_job_output(file_path)
     else:
         raise Exception(f"API call {api_call} not supported")

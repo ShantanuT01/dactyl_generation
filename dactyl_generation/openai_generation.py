@@ -77,7 +77,7 @@ def create_batch_job(system_prompt, examples, few_shot_size, model, max_tokens):
     return {
         RESULT_FILE_ID: result_file_id,
         INPUT_FILE: requests,
-        API_CALL: "openai"
+        API_CALL: OPENAI
     }
 
 

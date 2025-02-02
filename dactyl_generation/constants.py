@@ -29,3 +29,15 @@ RESULT = "result"
 PARAMS = "params"
 API_CALL = "api_call"
 TARGET = "target"
+BATCH_ID = "batch_id"
+
+
+CLAUDE = "claude"
+GPT = "gpt"
+MISTRAL = "mistral"
+ANTHROPIC = "anthropic"
+OPENAI = "openai"
+
+PX = "p(x)"
+ENTROPY = "entropy"
+COUNT = "count"

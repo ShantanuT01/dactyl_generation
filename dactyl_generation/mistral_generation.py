@@ -49,7 +49,7 @@ def create_batch_job(file_name, system_prompt, examples, few_shot_size, model,ma
     batch_job = start_batch_job(input_file, model)
     input_file = input_file.model_dump(mode="json")
     batch_job = batch_job.model_dump(mode="json")
-    return {"batch_job": batch_job, INPUT_FILE: input_file, PROMPTS: prompts, API_CALL: "mistral"}
+    return {"batch_job": batch_job, INPUT_FILE: input_file, PROMPTS: prompts, API_CALL: MISTRAL}
 
 def get_batch_jobs():
     return MISTRAL_CLIENT.batch.jobs.list(
