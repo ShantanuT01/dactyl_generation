@@ -75,16 +75,19 @@ def get_batch_job_output(file_path):
     temperatures = list()
     top_ps = list()
     prompts = list()
+    custom_ids = list()
     for prompt in raw_prompts:
         prompts.append("\n\n".join([str(message[CONTENT]) for message in prompt[BODY][MESSAGES]]))
         temperatures.append(prompt[BODY][TEMPERATURE])
         top_ps.append(prompt[BODY][TOP_P])
+        custom_ids.append(prompt[CUSTOM_ID])
 
     generations = pd.DataFrame(rows)
     ret = pd.DataFrame()
     ret[PROMPT] = prompts
     ret[TEMPERATURE] = temperatures
     ret[TOP_P] = top_ps
+    ret[CUSTOM_ID] = custom_ids
     return generations.merge(ret, on=CUSTOM_ID,how="left")
 
 
