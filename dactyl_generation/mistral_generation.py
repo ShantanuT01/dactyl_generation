@@ -58,7 +58,7 @@ def get_batch_jobs():
 
 def get_batch_job_output(file_path):
     with open(file_path, "r") as f:
-        data = json.load(file_path)
+        data = json.load(f)
     job_id = data["batch_job"]["id"]
     output_file = MISTRAL_CLIENT.batch.jobs.get(job_id=job_id).output_file
     content = MISTRAL_CLIENT.files.download(file_id=output_file).read().decode("utf-8")
