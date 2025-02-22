@@ -85,15 +85,15 @@ def get_batch_job_output(file_path):
     with open(file_path,'r') as f:
         data = json.load(f)
     batch_job = OPENAI_CLIENT.batches.retrieve(data[RESULT_FILE_ID])
-    print(batch_job)
     result = OPENAI_CLIENT.files.content(batch_job.output_file_id).content
     df = pd.read_json(BytesIO(result), lines=True)
     responses = df[RESPONSE]
+    custom_ids = df[CUSTOM_ID]
     generations = list()
-    for response in responses:
+    for response, custom_id in zip(responses, custom_ids):
         generation = dict()
         generation[TEXT] = response[BODY][CHOICES][0][MESSAGE][CONTENT]
-        generation[CUSTOM_ID] = response[CUSTOM_ID]
+        generation[CUSTOM_ID] = custom_id
         generations.append(generation)
     generations = pd.DataFrame(generations)
     requests = data["input_file"]
@@ -183,9 +183,6 @@ if __name__ == "__main__":
     responses = df["response"]
     for response in responses:
         print(response['body']['choices'][0]['message']['content'])
-
-
-
 
 
 
