@@ -35,7 +35,7 @@ def generate_texts_using_batch(model: str, output_path: str, prompts_path: str, 
     top_ps = prompt_df[TOP_P].to_list()
 
     if model.find(CLAUDE) >= 0:
-        parameters = anthropic_generation.request_message_batch(messages, model, temperatures,top_ps,max_completion_tokens=max_completion_tokens)
+        parameters = anthropic_generation.create_batch_job(messages, model, temperatures,top_ps,max_completion_tokens=max_completion_tokens)
         with open(output_path, 'w+') as file:
             json.dump(parameters, file, indent=4)
     elif model.find(GPT) >= 0:

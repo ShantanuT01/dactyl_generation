@@ -93,7 +93,7 @@ def get_message_batch(messages: List[List[dict]], model: str, temperatures: List
     return requests
 
 
-def request_message_batch(messages:List[List[dict]], model: str, temperatures:List[float],top_ps: List[float],max_completion_tokens: int =512) -> dict:
+def create_batch_job(messages:List[List[dict]], model: str, temperatures:List[float],top_ps: List[float],max_completion_tokens: int =512) -> dict:
     """
     Requests message batch to Anthropic API given a list of examples.
 
