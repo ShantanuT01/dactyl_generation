@@ -1,9 +1,12 @@
+"""
+Generates texts with DeepSeek models using the DeepInfra API.
+"""
 import os
 from openai import OpenAI
 from dotenv import load_dotenv
 from dactyl_generation.constants import *
 import pandas as pd
-
+from typing import List
 load_dotenv()
 
 DEEPSEEK_CLIENT = OpenAI(
@@ -11,13 +14,18 @@ DEEPSEEK_CLIENT = OpenAI(
     base_url="https://api.deepinfra.com/v1/openai"
 )
 
-def format_message_with_few_shot_examples(system_prompt: str,  examples: list) -> list:
+def format_message_with_few_shot_examples(system_prompt: str,  examples: List[str]) -> list:
     """
-    Formats message with examples to pass to OpenAI API.
-    :param system_prompt: System prompt to pass to ChatGPT
-    :param examples: String examples
-    :return: list of messages
+    Formats message with examples to pass to OpenAI API which is the same format for DeepInfra's API.
+
+    Args:
+        system_prompt: System prompt to pass to DeepSeek.
+        examples: String examples
+
+    Returns:
+        messages: list of messages to pass to API.
     """
+
 
     messages = list()
     messages.append(
@@ -34,17 +42,22 @@ def format_message_with_few_shot_examples(system_prompt: str,  examples: list) -
     return messages
 
 
-def prompt_with_few_shot_examples(messages, model, temperature, top_p, max_completion_tokens=512,number_of_responses=1):
+def prompt_with_few_shot_examples(messages: List[dict], model: str, temperature:float , top_p:float, max_completion_tokens:int=512,number_of_responses:int=1) -> list:
+    """
+    Pass a single list of messages to DeepSeek to generate text.
+
+    Args:
+        messages: List of messages to pass in.
+        model: model name.
+        temperature: temperature, value from 0 to 2.
+        top_p: top-p value from 0 to 1.
+        max_completion_tokens: maximum number of completion tokens
+        number_of_responses: maximum number of responses.
+
+    Returns:
+        responses: List of responses.
     """
 
-    :param messages: List of messages to pass in
-    :param model: model name
-    :param temperature:
-    :param top_p:
-    :param max_completion_tokens:
-    :param number_of_responses:
-    :return:
-    """
 
     api_response = DEEPSEEK_CLIENT.chat.completions.create(
         messages=messages,
@@ -61,19 +74,3 @@ def prompt_with_few_shot_examples(messages, model, temperature, top_p, max_compl
 
 
 
-if __name__ == "__main__":
-    df = pd.read_csv("../datasets/tweets/release/human_training.csv")
-    examples = df["text"].sample(5).to_list()
-    messages = format_message_with_few_shot_examples(
-        "You are Twitter bot simulating tweets from 538's 3 Million Troll Tweets dataset. You will generate human tweets in the style of that dataset. Any events referenced in tweets, if applicable, should take place between 2015 to 2018. The tweets do not have to be factual. ",
-        examples)
-    print(examples)
-    generated_tweets = prompt_with_few_shot_examples(
-        messages=messages,
-        model=DEEPSEEK_V3,
-        temperature=1,
-        top_p=1,
-        max_completion_tokens=50,
-        number_of_responses=1
-    )
-    print(generated_tweets)

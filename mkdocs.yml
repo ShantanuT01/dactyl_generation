@@ -1,0 +1,33 @@
+site_name: DACTYL Generation
+theme:
+  name: "material"
+  logo: "assets/icons8-pterodactyl-480.svg"
+  palette:
+    primary: teal
+  favicon: "assets/web/icons8-pterodactyl-color-120.png"
+
+plugins:
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+nav:
+  - Home: index.md
+  - Dataset: dataset.md
+  - API Reference:
+    - Gemini Generation: API/gemini_generation.md
+    - DeepSeek Generation: API/deepseek_generation.md
+    - Anthropic Generation: API/anthropic_generation.md
+    - OpenAI Generation: API/openai_generation.md
+    - Bedrock Generation: API/bedrock_generation.md
+    - Mistral Generation: API/mistral_generation.md
+    - Quick Generation: API/quick.md
+
+
+

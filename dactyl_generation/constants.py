@@ -31,12 +31,20 @@ API_CALL = "api_call"
 TARGET = "target"
 BATCH_ID = "batch_id"
 
+BLOCK_NONE = "BLOCK_NONE"
+EXAMPLES = "examples"
+
 
 CLAUDE = "claude"
 GPT = "gpt"
 MISTRAL = "mistral"
 ANTHROPIC = "anthropic"
 OPENAI = "openai"
+BEDROCK = "bedrock"
+GEMINI = "gemini"
+DEEPSEEK = "deepseek"
+
+
 
 PX = "p(x)"
 ENTROPY = "entropy"

@@ -1,3 +1,7 @@
+"""
+Generates texts with using the Mistral Batch API.
+"""
+import mistralai.files
 from mistralai import Mistral, File
 from dotenv import load_dotenv
 import os
@@ -5,6 +9,7 @@ from io import BytesIO
 import json
 import numpy as np
 import pandas as pd
+from typing import List, Tuple
 
 from dactyl_generation.constants import *
 from dactyl_generation.openai_generation import format_message_with_few_shot_examples
@@ -14,7 +19,20 @@ load_dotenv()
 MISTRAL_CLIENT = Mistral(api_key=os.environ["MISTRAL_API_KEY"])
 
 
-def create_message_batch(file_name, system_prompt, batch_of_examples, max_tokens):
+def create_message_batch(file_name: str, system_prompt: str, batch_of_examples: List[List[str]], max_tokens: int) -> Tuple[List[dict], mistralai.models.UploadFileOut]:
+    """
+    Creates a message batch of few shot examples to pass to Mistral API.
+
+    Args:
+        file_name: Name of file in Mistral API to save as.
+        system_prompt: System prompt to pass to.
+        batch_of_examples: list of lists containing examples
+        max_tokens: maximum number of tokens to generate
+
+    Returns:
+        tuple: List of requests sent, UploadFileOut object
+    """
+
     buffer = BytesIO()
     list_of_requests = list()
     for index, examples in enumerate(batch_of_examples):
@@ -34,7 +52,18 @@ def create_message_batch(file_name, system_prompt, batch_of_examples, max_tokens
     return list_of_requests, MISTRAL_CLIENT.files.upload(file=file, purpose="batch")
 
 
-def start_batch_job(input_file, model):
+def start_batch_job(input_file: mistralai.models.UploadFileOut, model: str) -> mistralai.models.BatchJobOut:
+    """
+    Start batch job from input file containing prompts.
+
+    Args:
+        input_file: input file object to create job with
+        model: model name to use for generation
+
+    Returns:
+        batch_job: Batch job object
+    """
+
     batch_job = MISTRAL_CLIENT.batch.jobs.create(
         input_files=[input_file.id],
         model=model,
@@ -43,7 +72,21 @@ def start_batch_job(input_file, model):
     )
     return batch_job
 
-def create_batch_job(file_name, system_prompt, examples, few_shot_size, model,max_tokens):
+def create_batch_job(file_name: str, system_prompt: str, examples: List[str], few_shot_size: int, model: str,max_tokens: int) -> dict:
+    """
+    Creates batch job for few shot prompting given examples, system prompt, and file name to upload to.
+    Args:
+        file_name: name of file to upload to Mistral API.
+        system_prompt: System prompt.
+        examples: list of examples, should be divisible by `few_shot_size`.
+        few_shot_size: number of examples per prompt, should divide `examples` evenly
+        model: name of model
+        max_tokens: maximum number of tokens per generation
+
+    Returns:
+        info: dictionary containing batch job info
+    """
+
     batches = np.split(np.array(examples), len(examples)//few_shot_size)
     prompts, input_file = create_message_batch(file_name, system_prompt, batches, max_tokens)
     batch_job = start_batch_job(input_file, model)
@@ -56,7 +99,15 @@ def get_batch_jobs():
         metadata={"job_type": "testing"}
     )
 
-def get_batch_job_output(file_path):
+def get_batch_job_output(file_path: str) -> pd.DataFrame:
+    """
+    Gets batch job results using saved metadata from a local JSON file.
+    Args:
+        file_path: local JSON file containing output of the `create_batch_job` function
+
+    Returns:
+        df: pandas DataFrame of generations.
+    """
     with open(file_path, "r") as f:
         data = json.load(f)
     job_id = data["batch_job"]["id"]

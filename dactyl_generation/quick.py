@@ -1,3 +1,6 @@
+"""
+Generates texts quickly using wrapper functions to redirect to appropriate model functions.
+"""
 import json
 from dactyl_generation import openai_generation, anthropic_generation, mistral_generation
 from dactyl_generation import google_generation,  bedrock_generation, deepseek_generation
@@ -8,10 +11,53 @@ import time
 import pandas as pd
 from tqdm import tqdm
 
-def generate_texts_using_batch(model, human_dataframe, output_path, system_prompt, few_shot_size, number_of_generations,max_completion_tokens):
+
+def select_few_shot_examples_from_dataset(human_dataframe: pd.DataFrame, few_shot_size: int, prompt_example_path: str, number_of_generations: int):
+    """
+    Saves set of few-shot prompts from human dataset as JSON file.
+
+    Args:
+        human_dataframe: dataframe of human texts, where `text` column exists
+        few_shot_size: few shot size per prompt
+        prompt_example_path: JSON ouput path
+        number_of_generations: number of prompts to generate
+
+    Returns:
+        None
+    """
     examples = list()
     for _ in range(number_of_generations):
         examples.extend(human_dataframe[TEXT].sample(few_shot_size).to_list())
+
+    pd.DataFrame({EXAMPLES: examples}).to_json(prompt_example_path, index=False, indent=4, orient="records")
+
+
+def generate_texts_using_batch_with_few_shot_prompting(model: str, human_dataframe: pd.DataFrame, output_path: str, system_prompt: str, few_shot_size: int, number_of_generations: int = 200,max_completion_tokens: int = 512, example_prompts_path: str =None) -> None:
+    """
+    Generates prompts to use using batch APIs from select providers.
+    If `example_prompts_path` is `None`, the function will randomly sample few-shot examples to use; otherwise it will generate prompts using the examples provided.
+    Prompt and batch data are saved to the output_path as a JSON.
+
+    Args:
+        model: Name of model.
+        human_dataframe: human dataframe where text column is `text`
+        output_path: output path to save prompt metadata
+        system_prompt: System prompt
+        few_shot_size: few shot size.
+        number_of_generations: number of generations
+        max_completion_tokens: max completion tokens
+        example_prompts_path: Examples prompts saved in JSON format from the `select_few_shot_examples_from_dataset` function.
+
+    Returns:
+        None
+    """
+    if example_prompts_path is None:
+        examples = list()
+        for _ in range(number_of_generations):
+            examples.extend(human_dataframe[TEXT].sample(few_shot_size).to_list())
+    else:
+        examples = pd.read_json(example_prompts_path)[EXAMPLES].to_list()
+
     if model.find(CLAUDE) >= 0:
         parameters = anthropic_generation.request_message_batch(system_prompt, examples, few_shot_size, model, max_completion_tokens=max_completion_tokens)
         with open(output_path, 'w+') as file:
@@ -30,7 +76,17 @@ def generate_texts_using_batch(model, human_dataframe, output_path, system_promp
         raise Exception("Model type not supported")
 
 
-def get_batch_job_results(file_path, output_path):
+def get_batch_job_results(file_path: str, output_path: str) -> None:
+    """
+    Saves batch job prompts as JSON file.
+
+    Args:
+        file_path: File path containing batch data saved from `generate_texts_using_batch_with_few_shot_prompting`.
+        output_path: Output JSON path to save generations.
+
+    Returns:
+        None
+    """
     with open(file_path) as file:
         data = json.load(file)
     api_call = data[API_CALL]
@@ -45,11 +101,41 @@ def get_batch_job_results(file_path, output_path):
     df.to_json(output_path,index=False, orient='records', indent=4)
 
 
-def generate_texts(model, human_dataframe, output_path, system_prompt, few_shot_size, number_of_generations, max_completion_tokens,category="", wait_after_every=20, sleep_time=30):
+def generate_texts_with_few_shot_prompting(model: str, human_dataframe: pd.DataFrame, output_path: str, system_prompt: str, few_shot_size: int, number_of_generations: int =200, max_completion_tokens: int =512, category: str ="", wait_after_every:int =20, sleep_time: int =30, example_prompts_path: str =None):
+    """
+    This function generates examples from an API live, no batching. If `example_prompts_path` is given, the function will use all prompts in the JSON file.
+    Otherwise, it will generate random few shot examples.
+    Outputs are saved as JSON.
+
+    Args:
+        model: name of model
+        human_dataframe: human dataframe with `text` column to pull examples from.
+        output_path: output path to save JSON file
+        system_prompt: System prompt
+        few_shot_size: few shot size
+        number_of_generations: number of generations/prompts to make
+        max_completion_tokens: maximum number of tokens per generation
+        category: categorical column
+        wait_after_every: Pauses generation after a certain amount of requests
+        sleep_time: Sleeps for a certain amount of time in seconds
+        example_prompts_path: Example prompts JSON
+
+    Returns:
+        None
+    """
     rows = list()
-    for count,_ in enumerate(tqdm(range(number_of_generations))):
-        examples = human_dataframe[TEXT].sample(few_shot_size).to_list()
-        if model.find("bedrock") >= 0:
+    complete_examples = None
+    iterations = number_of_generations
+    if example_prompts_path:
+        complete_examples = pd.read_json(example_prompts_path)[EXAMPLES].to_list()
+        iterations = len(complete_examples)
+    for count,_ in enumerate(tqdm(range(iterations))):
+        if complete_examples:
+            examples = complete_examples[count]
+        else:
+            examples = human_dataframe[TEXT].sample(few_shot_size).to_list()
+        
+        if model.find(BEDROCK) >= 0:
             max_temperature = 1
         else:
             max_temperature = 2
@@ -62,12 +148,12 @@ def generate_texts(model, human_dataframe, output_path, system_prompt, few_shot_
         row[MODEL] = model
         row[TARGET] = 1
         row["category"] = category
-        if model.find("bedrock") >= 0:
+        if model.find(BEDROCK) >= 0:
             text = bedrock_generation.prompt_with_few_shot_examples(system_prompt, examples, model, temperature, top_p, max_completion_tokens=max_completion_tokens)
-        elif model.find("deepseek") >= 0:
+        elif model.find(DEEPSEEK) >= 0:
             messages = openai_generation.format_message_with_few_shot_examples(system_prompt, examples)
             text = deepseek_generation.prompt_with_few_shot_examples(messages, model, temperature, top_p, max_completion_tokens=max_completion_tokens)[0]
-        elif model.find("gemini") >= 0:
+        elif model.find(GEMINI) >= 0:
             prompt = "\n\n".join(examples)
             text = google_generation.prompt_with_few_shot_examples(system_prompt, prompt, model, temperature, top_p)
         else:
@@ -81,13 +167,4 @@ def generate_texts(model, human_dataframe, output_path, system_prompt, few_shot_
 
     pd.DataFrame(rows).to_json(output_path, orient="records", indent=4, index=False)
 
-if __name__ == "__main__":
-    system_prompt = '''You are a Twitter bot simulating tweets from 538's 3 Million Troll Tweets dataset. You will generate human tweets in the style of that dataset. Any events referenced in tweets, if applicable, should take place between 2015 to 2018. The tweets do not have to be factual. You do not have to follow proper grammar rules. Output only the text of the tweet. Output only one tweet.'''
-
-
-    human_dataframe = pd.read_csv("../datasets/tweets/release/human_training.csv")
-    output_path = f"../batches/requests/test_speed.json"
-    #generate_texts_using_batch("claude-3-haiku-20240307", human_dataframe, output_path, system_prompt, few_shot_size=5, number_of_generations=2, max_completion_tokens=100)
-    generate_texts("bedrock/us.meta.llama3-2-90b-instruct-v1:0", human_dataframe, output_path, system_prompt, few_shot_size=5, number_of_generations=5, max_completion_tokens=100)
-    #get_batch_job_results("../batches/requests/openai-test.json", "../batches/outputs/openai-test.json")
 
