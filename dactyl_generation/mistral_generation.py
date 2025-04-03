@@ -20,7 +20,7 @@ MISTRAL_CLIENT = Mistral(api_key=os.environ["MISTRAL_API_KEY"])
 
 def create_message_batch(file_name: str, messages: List[List[dict]], max_tokens: int, temperatures: List[float], top_ps: List[float]) -> Tuple[List[dict], mistralai.models.UploadFileOut]:
     """
-    Creates a message batch of few shot examples to pass to Mistral API.
+   Creates batch of messages to send to Mistral API.
 
     Args:
         file_name: Name of file in Mistral API to save as.
@@ -54,7 +54,7 @@ def create_message_batch(file_name: str, messages: List[List[dict]], max_tokens:
 
 def start_batch_job(input_file: mistralai.models.UploadFileOut, model: str) -> mistralai.models.BatchJobOut:
     """
-    Start batch job from input file containing prompts.
+    Start batch job from input file stored on Mistral API containing prompts.
 
     Args:
         input_file: input file object to create job with
@@ -74,7 +74,7 @@ def start_batch_job(input_file: mistralai.models.UploadFileOut, model: str) -> m
 
 def create_batch_job(file_name: str, messages: List[List[dict]], model: str,max_tokens: int,  temperatures: List[float], top_ps: List[float]) -> dict:
     """
-    Creates batch job for few shot prompting given examples, system prompt, and file name to upload to.
+    Creates batch job for set of prompts given file name to save Mistral prompts to.
     Args:
         file_name: name of file to upload to Mistral API.
         messages: List of list of messages to pass.
