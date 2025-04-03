@@ -55,6 +55,66 @@ def get_message_batch(system_prompt: str, examples_batch: List[List[str]], model
     return requests
 
 
+def get_message_batch_with_different_system_prompts(system_prompts: List[str], examples_batch: List[List[str]], model: str, temperatures: List[float], top_ps: List[float],max_tokens: int) -> List[Request]:
+    """
+    Generate a batch of requests from a system prompt.
+
+    Args:
+        system_prompts: List of system prompts.
+        examples_batch: List of list of examples.
+        model: model name
+        temperatures: list of temperatures
+        top_ps: list of top p values
+        max_tokens: maximum tokens to generate
+
+    Returns:
+        requests: list of requests
+    """
+    requests = list()
+    for index, example in enumerate(examples_batch):
+        messages = format_message_with_few_shot_examples(system_prompts[index], example)
+        # each individual request maps to one few shot set
+        request = Request(
+            custom_id=f"request-{index}",
+            params=MessageCreateParamsNonStreaming(
+                model=model,
+                temperature=temperatures[index],
+                top_p=top_ps[index],
+                system=system_prompts[index],
+                messages=messages[1:],
+                max_tokens=max_tokens
+            )
+        )
+        requests.append(request)
+    return requests
+
+def request_message_batch_with_different_system_prompts(system_prompts: List[str], examples: List[List[str]], model: str, max_completion_tokens: int =512) -> dict:
+    """
+    Requests message batch to Anthropic API given a list of examples.
+
+    Args:
+        system_prompts: System prompt to pass to model
+        examples: List of list of examples.
+        model: name of model
+        max_completion_tokens: maximum number of tokens to generate
+
+    Returns:
+        request_data: requests sent to Anthropic API
+    """
+
+
+    temperatures = np.random.uniform(low=0.0, high=1.0, size=len(examples))
+    top_ps = np.random.uniform(low=0.0, high=1.0, size=len(examples))
+    requests = get_message_batch_with_different_system_prompts(system_prompts, examples, model,temperatures, top_ps, max_completion_tokens)
+
+    message_batch = ANTHROPIC_CLIENT.messages.batches.create(requests=requests)
+
+    return {
+        BATCH_ID: message_batch.id,
+        PROMPTS: requests,
+        API_CALL: ANTHROPIC
+    }
+
 
 
 def request_message_batch(system_prompt: str, examples: List[str], examples_size: int, model: str, max_completion_tokens: int =512) -> dict:

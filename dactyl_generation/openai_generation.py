@@ -68,6 +68,51 @@ def create_individual_request_for_batch(custom_id: Any, model: str, system_promp
     }}
     return request
 
+def create_batch_job_with_different_system_prompts(system_prompts: List[str], batches: List[List[str]], model: str, max_tokens: int) -> dict:
+    """
+       Creates batch job of prompts of few shot examples with different system prompts.
+
+       Args:
+           system_prompts: System prompt to pass.
+           batches: List of list of examples.
+           model: model name
+           max_tokens: maximum token generation limit
+
+       Returns:
+           results: dictionary containing request information
+       """
+
+    json_strs = list()
+    requests = list()
+    for i, batch in enumerate(batches):
+        request = create_individual_request_for_batch(f"request-{i}", model, system_prompts[i], batch, max_tokens)
+        requests.append(request)
+        json_strs.append(json.dumps(request))
+    buffer = BytesIO(("\n".join(json_strs)).encode("utf-8"))
+    # with tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8', delete=False) as fp:
+    #    fp.write("\n".join(json_strs))
+    #    temp_filename = fp.name
+
+    batch_file = OPENAI_CLIENT.files.create(
+        file=buffer,
+        purpose="batch"
+    )
+    #  os.remove(temp_filename)
+
+    batch_job = OPENAI_CLIENT.batches.create(
+        input_file_id=batch_file.id,
+        endpoint="/v1/chat/completions",
+        completion_window="24h"
+    )
+
+    result_file_id = batch_job.id
+
+    return {
+        RESULT_FILE_ID: result_file_id,
+        INPUT_FILE: requests,
+        API_CALL: OPENAI
+    }
+
 
 def create_batch_job(system_prompt: str, examples: List[str], few_shot_size: int, model: str, max_tokens: int) -> dict:
     """

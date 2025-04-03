@@ -10,66 +10,41 @@ import tempfile
 import time
 import pandas as pd
 from tqdm import tqdm
+from typing import List
 
 
-def select_few_shot_examples_from_dataset(human_dataframe: pd.DataFrame, few_shot_size: int, prompt_example_path: str, number_of_generations: int):
+def generate_texts_using_batch_with_few_shot_prompting(model: str, output_path: str,  few_shot_size: int,  example_prompts_path: str, max_completion_tokens: int = 512) -> None:
     """
-    Saves set of few-shot prompts from human dataset as JSON file.
-
-    Args:
-        human_dataframe: dataframe of human texts, where `text` column exists
-        few_shot_size: few shot size per prompt
-        prompt_example_path: JSON ouput path
-        number_of_generations: number of prompts to generate
-
-    Returns:
-        None
-    """
-    examples = list()
-    for _ in range(number_of_generations):
-        examples.extend(human_dataframe[TEXT].sample(few_shot_size).to_list())
-
-    pd.DataFrame({EXAMPLES: examples}).to_json(prompt_example_path, index=False, indent=4, orient="records")
-
-
-def generate_texts_using_batch_with_few_shot_prompting(model: str, human_dataframe: pd.DataFrame, output_path: str, system_prompt: str, few_shot_size: int, number_of_generations: int = 200,max_completion_tokens: int = 512, example_prompts_path: str =None) -> None:
-    """
-    Generates prompts to use using batch APIs from select providers.
-    If `example_prompts_path` is `None`, the function will randomly sample few-shot examples to use; otherwise it will generate prompts using the examples provided.
+    Generates prompts to use using batch APIs from select providers using example prompts path.
     Prompt and batch data are saved to the output_path as a JSON.
 
     Args:
         model: Name of model.
-        human_dataframe: human dataframe where text column is `text`
         output_path: output path to save prompt metadata
-        system_prompt: System prompt
         few_shot_size: few shot size.
-        number_of_generations: number of generations
-        max_completion_tokens: max completion tokens
         example_prompts_path: Examples prompts saved in JSON format from the `select_few_shot_examples_from_dataset` function.
+        max_completion_tokens: max completion tokens
+
 
     Returns:
         None
     """
-    if example_prompts_path is None:
-        examples = list()
-        for _ in range(number_of_generations):
-            examples.extend(human_dataframe[TEXT].sample(few_shot_size).to_list())
-    else:
-        examples = pd.read_json(example_prompts_path)[EXAMPLES].to_list()
 
+    prompt_df = pd.read_json(example_prompts_path)
+    examples = prompt_df[EXAMPLES].to_list()
+    system_prompts = prompt_df["system_prompt"].to_list()
     if model.find(CLAUDE) >= 0:
-        parameters = anthropic_generation.request_message_batch(system_prompt, examples, few_shot_size, model, max_completion_tokens=max_completion_tokens)
+        parameters = anthropic_generation.request_message_batch_with_different_system_prompts(system_prompts, examples, few_shot_size, model, max_completion_tokens=max_completion_tokens)
         with open(output_path, 'w+') as file:
             json.dump(parameters, file, indent=4)
     elif model.find(GPT) >= 0:
-        parameters = openai_generation.create_batch_job(system_prompt, examples, few_shot_size, model, max_completion_tokens)
+        parameters = openai_generation.create_batch_job_with_different_system_prompts(system_prompts, examples, few_shot_size, model, max_completion_tokens)
         with open(output_path, 'w+') as file:
             json.dump(parameters, file, indent=4)
     elif model.find(MISTRAL) >= 0:
         file_name = next(tempfile._get_candidate_names())
         file_name = f"{file_name}.jsonl"
-        parameters = mistral_generation.create_batch_job(file_name,system_prompt, examples, few_shot_size, model, max_tokens=max_completion_tokens)
+        parameters = mistral_generation.create_message_batch_with_different_system_prompts(file_name,system_prompts, examples, few_shot_size, model, max_tokens=max_completion_tokens)
         with open(output_path, 'w+') as file:
             json.dump(parameters, file, indent=4)
     else:

@@ -20,6 +20,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Dataset: dataset.md
+  - Prompt Schema: promptschema.md
   - API Reference:
     - Gemini Generation: API/gemini_generation.md
     - DeepSeek Generation: API/deepseek_generation.md
