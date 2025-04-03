@@ -30,8 +30,12 @@ PARAMS = "params"
 API_CALL = "api_call"
 TARGET = "target"
 BATCH_ID = "batch_id"
-
+TYPE = "type"
+MAX_TOKENS = "max_tokens"
+BATCH = "batch"
 BLOCK_NONE = "BLOCK_NONE"
+
+
 EXAMPLES = "examples"
 
 

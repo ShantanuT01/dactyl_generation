@@ -12,77 +12,44 @@ import pandas as pd
 from typing import List, Tuple
 
 from dactyl_generation.constants import *
-from dactyl_generation.openai_generation import format_message_with_few_shot_examples
 
 load_dotenv()
 
 MISTRAL_CLIENT = Mistral(api_key=os.environ["MISTRAL_API_KEY"])
 
 
-def create_message_batch(file_name: str, system_prompt: str, batch_of_examples: List[List[str]], max_tokens: int) -> Tuple[List[dict], mistralai.models.UploadFileOut]:
+def create_message_batch(file_name: str, messages: List[List[dict]], max_tokens: int, temperatures: List[float], top_ps: List[float]) -> Tuple[List[dict], mistralai.models.UploadFileOut]:
     """
     Creates a message batch of few shot examples to pass to Mistral API.
 
     Args:
         file_name: Name of file in Mistral API to save as.
-        system_prompt: System prompt to pass to.
-        batch_of_examples: list of lists containing examples
+        messages: list of list of messages to pass.
         max_tokens: maximum number of tokens to generate
+        temperatures: temperatures of each prompt
+        top_ps: top-p values of each prompt
 
     Returns:
         tuple: List of requests sent, UploadFileOut object
     """
-
+    assert(len(temperatures) == len(top_ps))
+    assert(len(messages) == len(temperatures))
     buffer = BytesIO()
     list_of_requests = list()
-    for index, examples in enumerate(batch_of_examples):
-        messages = format_message_with_few_shot_examples(system_prompt, examples)
+    for index, message_batch in enumerate(messages):
         request = {
             CUSTOM_ID: f"request-{index}",
             BODY: {
-                MESSAGES: messages,
-                "max_tokens": max_tokens,
-                TEMPERATURE: np.random.uniform(0, 1),
-                TOP_P: np.random.uniform(0, 1)
+                MESSAGES: message_batch,
+                MAX_TOKENS: max_tokens,
+                TEMPERATURE: temperatures[index],
+                TOP_P: top_ps[index]
             }
         }
         list_of_requests.append(request)
         buffer.write((json.dumps(request)+"\n").encode("utf-8"))
     file = File(file_name=file_name, content=buffer.getvalue())
-    return list_of_requests, MISTRAL_CLIENT.files.upload(file=file, purpose="batch")
-
-
-def create_message_batch_with_different_system_prompts(file_name: str, system_prompts: List[str], batch_of_examples: List[List[str]], max_tokens: int) -> Tuple[List[dict], mistralai.models.UploadFileOut]:
-    """
-    Creates a message batch of few shot examples to pass to Mistral AP with different system prompts.
-
-    Args:
-        file_name: Name of file in Mistral API to save as.
-        system_prompts: List of system prompts to pass
-        batch_of_examples: list of lists containing examples
-        max_tokens: maximum number of tokens to generate
-
-    Returns:
-        tuple: List of requests sent, UploadFileOut object
-    """
-
-    buffer = BytesIO()
-    list_of_requests = list()
-    for index, examples in enumerate(batch_of_examples):
-        messages = format_message_with_few_shot_examples(system_prompts[index], examples)
-        request = {
-            CUSTOM_ID: f"request-{index}",
-            BODY: {
-                MESSAGES: messages,
-                "max_tokens": max_tokens,
-                TEMPERATURE: np.random.uniform(0, 1),
-                TOP_P: np.random.uniform(0, 1)
-            }
-        }
-        list_of_requests.append(request)
-        buffer.write((json.dumps(request)+"\n").encode("utf-8"))
-    file = File(file_name=file_name, content=buffer.getvalue())
-    return list_of_requests, MISTRAL_CLIENT.files.upload(file=file, purpose="batch")
+    return list_of_requests, MISTRAL_CLIENT.files.upload(file=file, purpose=BATCH)
 
 
 def start_batch_job(input_file: mistralai.models.UploadFileOut, model: str) -> mistralai.models.BatchJobOut:
@@ -105,44 +72,22 @@ def start_batch_job(input_file: mistralai.models.UploadFileOut, model: str) -> m
     )
     return batch_job
 
-def create_batch_job(file_name: str, system_prompt: str, examples: List[str], few_shot_size: int, model: str,max_tokens: int) -> dict:
+def create_batch_job(file_name: str, messages: List[List[dict]], model: str,max_tokens: int,  temperatures: List[float], top_ps: List[float]) -> dict:
     """
     Creates batch job for few shot prompting given examples, system prompt, and file name to upload to.
     Args:
         file_name: name of file to upload to Mistral API.
-        system_prompt: System prompt.
-        examples: list of examples, should be divisible by `few_shot_size`.
-        few_shot_size: number of examples per prompt, should divide `examples` evenly
+        messages: List of list of messages to pass.
         model: name of model
         max_tokens: maximum number of tokens per generation
+        temperatures: list of temperatures
+        top_ps: list of top_p values
 
     Returns:
         info: dictionary containing batch job info
     """
 
-    batches = np.split(np.array(examples), len(examples)//few_shot_size)
-    prompts, input_file = create_message_batch(file_name, system_prompt, batches, max_tokens)
-    batch_job = start_batch_job(input_file, model)
-    input_file = input_file.model_dump(mode="json")
-    batch_job = batch_job.model_dump(mode="json")
-    return {"batch_job": batch_job, INPUT_FILE: input_file, PROMPTS: prompts, API_CALL: MISTRAL}
-
-
-def create_batch_job_with_different_system_prompts(file_name: str, system_prompts: List[str], examples: List[List[str]], model: str,max_tokens: int) -> dict:
-    """
-    Creates batch job for few shot prompting given examples, system prompt, and file name to upload to.
-    Args:
-        file_name: name of file to upload to Mistral API.
-        system_prompts: System prompts.
-        examples: list of list of examples
-        model: name of model
-        max_tokens: maximum number of tokens per generation
-
-    Returns:
-        info: dictionary containing batch job info
-    """
-
-    prompts, input_file = create_message_batch_with_different_system_prompts(file_name, system_prompts, examples, max_tokens)
+    prompts, input_file = create_message_batch(file_name, messages,  max_tokens, temperatures, top_ps)
     batch_job = start_batch_job(input_file, model)
     input_file = input_file.model_dump(mode="json")
     batch_job = batch_job.model_dump(mode="json")
@@ -178,13 +123,13 @@ def get_batch_job_output(file_path: str) -> pd.DataFrame:
         row[TEXT] = response[RESPONSE][BODY][CHOICES][0][MESSAGE][CONTENT]
         row[MODEL] = response[RESPONSE][BODY][MODEL]
         rows.append(row)
-    raw_prompts = data["prompts"]
+    raw_prompts = data[PROMPTS]
     temperatures = list()
     top_ps = list()
     prompts = list()
     custom_ids = list()
     for prompt in raw_prompts:
-        prompts.append("\n\n".join([str(message[CONTENT]) for message in prompt[BODY][MESSAGES]]))
+        prompts.append(prompt[BODY][MESSAGES])
         temperatures.append(prompt[BODY][TEMPERATURE])
         top_ps.append(prompt[BODY][TOP_P])
         custom_ids.append(prompt[CUSTOM_ID])

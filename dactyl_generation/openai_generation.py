@@ -18,74 +18,51 @@ OPENAI_CLIENT = OpenAI(
 )
 
 
-def format_message_with_few_shot_examples(system_prompt: str,  examples: List[str]) -> List[dict]:
+def create_individual_request(custom_id: Any, model: str, messages:List[dict], max_completion_tokens: int, temperature: float, top_p: float) -> dict:
     """
-    Formats few-shot example as message to pass to OpenAI API.
-
-    Args:
-        system_prompt: System prompt to pass to OpenAI API
-        examples: list of examples
-
-    Returns:
-        messages: list of messages
-    """
-
-
-    messages = list()
-    messages.append(
-        {
-            ROLE: SYSTEM,
-            CONTENT: system_prompt
-        }
-    )
-    for example in examples:
-        message = dict()
-        message[ROLE] = USER
-        message[CONTENT] = example
-        messages.append(message)
-    return messages
-
-def create_individual_request_for_batch(custom_id: Any, model: str, system_prompt: str, examples: List[str], max_completion_tokens: int) -> dict:
-    """
-    Creates OpenAI REST API request for a single few-shot example for batching.
+    Creates OpenAI REST API request for a single request
 
     Args:
         custom_id: Custom ID of request.
         model: name of model.
-        system_prompt: System prompt to pass.
-        examples: List of examples.
+        messages: List of messages to pass.
         max_completion_tokens: Max token generation limit.
+        temperature: temperature
+        top_p: top-p value
 
     Returns:
         request: individual request formatted for OpenAI REST API.
     """
     request = {CUSTOM_ID: str(custom_id), "method": "POST", "url": "/v1/chat/completions", BODY: {
-        MESSAGES: format_message_with_few_shot_examples(system_prompt, examples),
+        MESSAGES: messages,
         MODEL: model,
-        TEMPERATURE: np.random.uniform(0, 2),
-        TOP_P: np.random.uniform(0, 1),
+        TEMPERATURE: temperature,
+        TOP_P: top_p,
         MAX_COMPLETION_TOKENS: max_completion_tokens
     }}
     return request
 
-def create_batch_job_with_different_system_prompts(system_prompts: List[str], batches: List[List[str]], model: str, max_tokens: int) -> dict:
+
+def create_batch_job(messages: List[List[dict]], model: str, max_tokens: int, temperatures: List[float], top_ps: List[float]) -> dict:
     """
-       Creates batch job of prompts of few shot examples with different system prompts.
+       Creates batch job of prompts given messages and temperatures.
 
        Args:
-           system_prompts: System prompt to pass.
-           batches: List of list of examples.
+           messages: List of list of messages to pass.
            model: model name
            max_tokens: maximum token generation limit
+           temperatures: temperatures
+           top_ps: top-p values
 
        Returns:
            results: dictionary containing request information
        """
-
+    assert(len(temperatures) == len(top_ps))
+    assert(len(messages) == len(temperatures))
     json_strs = list()
     requests = list()
-    for i, batch in enumerate(batches):
-        request = create_individual_request_for_batch(f"request-{i}", model, system_prompts[i], batch, max_tokens)
+    for i, batch in enumerate(messages):
+        request = create_individual_request(f"request-{i}", model, batch, max_tokens, temperatures[i], top_ps[i])
         requests.append(request)
         json_strs.append(json.dumps(request))
     buffer = BytesIO(("\n".join(json_strs)).encode("utf-8"))
@@ -98,53 +75,6 @@ def create_batch_job_with_different_system_prompts(system_prompts: List[str], ba
         purpose="batch"
     )
     #  os.remove(temp_filename)
-
-    batch_job = OPENAI_CLIENT.batches.create(
-        input_file_id=batch_file.id,
-        endpoint="/v1/chat/completions",
-        completion_window="24h"
-    )
-
-    result_file_id = batch_job.id
-
-    return {
-        RESULT_FILE_ID: result_file_id,
-        INPUT_FILE: requests,
-        API_CALL: OPENAI
-    }
-
-
-def create_batch_job(system_prompt: str, examples: List[str], few_shot_size: int, model: str, max_tokens: int) -> dict:
-    """
-    Creates batch job of prompts of few shot examples.
-
-    Args:
-        system_prompt: System prompt to pass.
-        examples: List of examples.
-        few_shot_size: Number of examples per prompt. `len(examples)` should be divisible by `few_shot_size`.
-        model: model name
-        max_tokens: maximum token generation limit
-
-    Returns:
-        results: dictionary containing request information
-    """
-    batches = np.split(np.array(examples), len(examples)//few_shot_size)
-    json_strs = list()
-    requests = list()
-    for i, batch in enumerate(batches):
-        request = create_individual_request_for_batch(f"request-{i}", model, system_prompt, examples, max_tokens)
-        requests.append(request)
-        json_strs.append(json.dumps(request))
-    buffer = BytesIO(("\n".join(json_strs)).encode("utf-8"))
-   # with tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8', delete=False) as fp:
-    #    fp.write("\n".join(json_strs))
-    #    temp_filename = fp.name
-
-    batch_file = OPENAI_CLIENT.files.create(
-        file=buffer,
-        purpose="batch"
-    )
-  #  os.remove(temp_filename)
 
     batch_job = OPENAI_CLIENT.batches.create(
         input_file_id=batch_file.id,
@@ -184,14 +114,14 @@ def get_batch_job_output(file_path: str) -> pd.DataFrame:
         generation[CUSTOM_ID] = custom_id
         generations.append(generation)
     generations = pd.DataFrame(generations)
-    requests = data["input_file"]
+    requests = data[INPUT_FILE]
     prompts = list()
     temperatures = list()
     top_ps = list()
     models = list()
     custom_ids =  list()
     for request in requests:
-        prompt = "\n\n".join([message[CONTENT] for message in request[BODY][MESSAGES]])
+        prompt = request[BODY][MESSAGES]
         prompts.append(prompt)
         temperatures.append(request[BODY][TEMPERATURE])
         top_ps.append(request[BODY][TOP_P])
@@ -208,43 +138,6 @@ def get_batch_job_output(file_path: str) -> pd.DataFrame:
     return generations
 
 
-def prompt_with_few_shot_learning(messages: List[dict], model: str, temperature: float, top_p: float, max_completion_tokens:int = 512,number_of_responses: int = 1) -> List[str]:
-    """
-    Get output from single few-shot prompt (live) request from OpenAI API.
-    Args:
-        messages: List of messages to pass in.
-        model: Model name.
-        temperature: temperature value, from 0 to 2.
-        top_p: top-p parameter, from 0 to 1.
-        max_completion_tokens: maximum token generation
-        number_of_responses: max responses
-
-    Returns:
-        responses: List of generated responses
-    """
-    """
-    Prompt OpenAI model with few shot learning examples.
-    :param messages: 
-    :param model: 
-    :param temperature: temperature parameter
-    :param top_p: top p parameter
-    :param max_completion_tokens: maximum number of tokens to generate
-    :param number_of_responses: max number of responses
-    :return:
-    """
-
-    api_response = OPENAI_CLIENT.chat.completions.create(
-        messages=messages,
-        model=model,
-        temperature=temperature,
-        top_p=top_p,
-        max_completion_tokens=max_completion_tokens,
-        n=number_of_responses
-    )
-    responses = list()
-    for response in api_response.choices:
-        responses.append(response.message.content.strip())
-    return responses
 
 
 

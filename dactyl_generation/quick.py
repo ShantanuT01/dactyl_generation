@@ -13,7 +13,7 @@ from tqdm import tqdm
 from typing import List
 
 
-def generate_texts_using_batch_with_few_shot_prompting(model: str, output_path: str,  few_shot_size: int,  example_prompts_path: str, max_completion_tokens: int = 512) -> None:
+def generate_texts_using_batch(model: str, output_path: str, prompts_path: str, max_completion_tokens: int = 512) -> None:
     """
     Generates prompts to use using batch APIs from select providers using example prompts path.
     Prompt and batch data are saved to the output_path as a JSON.
@@ -21,8 +21,7 @@ def generate_texts_using_batch_with_few_shot_prompting(model: str, output_path: 
     Args:
         model: Name of model.
         output_path: output path to save prompt metadata
-        few_shot_size: few shot size.
-        example_prompts_path: Examples prompts saved in JSON format from the `select_few_shot_examples_from_dataset` function.
+        prompts_path: prompts saved in JSON format from the `select_few_shot_examples_from_dataset` function.
         max_completion_tokens: max completion tokens
 
 
@@ -30,21 +29,23 @@ def generate_texts_using_batch_with_few_shot_prompting(model: str, output_path: 
         None
     """
 
-    prompt_df = pd.read_json(example_prompts_path)
-    examples = prompt_df[EXAMPLES].to_list()
-    system_prompts = prompt_df["system_prompt"].to_list()
+    prompt_df = pd.read_json(prompts_path)
+    messages = prompt_df[MESSAGES].to_list()
+    temperatures = prompt_df[TEMPERATURE].to_list()
+    top_ps = prompt_df[TOP_P].to_list()
+
     if model.find(CLAUDE) >= 0:
-        parameters = anthropic_generation.request_message_batch_with_different_system_prompts(system_prompts, examples, few_shot_size, model, max_completion_tokens=max_completion_tokens)
+        parameters = anthropic_generation.request_message_batch(messages, model, temperatures,top_ps,max_completion_tokens=max_completion_tokens)
         with open(output_path, 'w+') as file:
             json.dump(parameters, file, indent=4)
     elif model.find(GPT) >= 0:
-        parameters = openai_generation.create_batch_job_with_different_system_prompts(system_prompts, examples, few_shot_size, model, max_completion_tokens)
+        parameters = openai_generation.create_batch_job(messages, model, max_completion_tokens, temperatures, top_ps)
         with open(output_path, 'w+') as file:
             json.dump(parameters, file, indent=4)
     elif model.find(MISTRAL) >= 0:
         file_name = next(tempfile._get_candidate_names())
         file_name = f"{file_name}.jsonl"
-        parameters = mistral_generation.create_message_batch_with_different_system_prompts(file_name,system_prompts, examples, few_shot_size, model, max_tokens=max_completion_tokens)
+        parameters = mistral_generation.create_batch_job(file_name,messages, model, max_tokens=max_completion_tokens, temperatures=temperatures, top_ps=top_ps)
         with open(output_path, 'w+') as file:
             json.dump(parameters, file, indent=4)
     else:
@@ -76,7 +77,7 @@ def get_batch_job_results(file_path: str, output_path: str) -> None:
     df.to_json(output_path,index=False, orient='records', indent=4)
 
 
-def generate_texts_with_few_shot_prompting(model: str, human_dataframe: pd.DataFrame, output_path: str, system_prompt: str, few_shot_size: int, number_of_generations: int =200, max_completion_tokens: int =512, category: str ="", wait_after_every:int =20, sleep_time: int =30, example_prompts_path: str =None):
+def generate_texts_streaming(model: str, prompts_path: str, output_path: str, max_completion_tokens: int =512, category: str ="", wait_after_every:int =20, sleep_time: int =30) -> None:
     """
     This function generates examples from an API live, no batching. If `example_prompts_path` is given, the function will use all prompts in the JSON file.
     Otherwise, it will generate random few shot examples.
@@ -84,61 +85,48 @@ def generate_texts_with_few_shot_prompting(model: str, human_dataframe: pd.DataF
 
     Args:
         model: name of model
-        human_dataframe: human dataframe with `text` column to pull examples from.
+        prompts_path: JSON file containing OpenAI API style prompts
         output_path: output path to save JSON file
-        system_prompt: System prompt
-        few_shot_size: few shot size
-        number_of_generations: number of generations/prompts to make
         max_completion_tokens: maximum number of tokens per generation
         category: categorical column
         wait_after_every: Pauses generation after a certain amount of requests
         sleep_time: Sleeps for a certain amount of time in seconds
-        example_prompts_path: Example prompts JSON
+
 
     Returns:
         None
     """
     rows = list()
-    complete_examples = None
-    iterations = number_of_generations
-    if example_prompts_path:
-        complete_examples = pd.read_json(example_prompts_path)[EXAMPLES].to_list()
-        iterations = len(complete_examples)
-    for count,_ in enumerate(tqdm(range(iterations))):
-        if complete_examples:
-            examples = complete_examples[count]
-        else:
-            examples = human_dataframe[TEXT].sample(few_shot_size).to_list()
-        
-        if model.find(BEDROCK) >= 0:
-            max_temperature = 1
-        else:
-            max_temperature = 2
-        temperature = np.random.uniform(0, max_temperature)
-        top_p = np.random.uniform(0, 1)
+    prompt_df = pd.read_json(prompts_path)
+    messages = prompt_df[MESSAGES].to_list()
+    temperatures = prompt_df[TEMPERATURE].to_list()
+    top_ps = prompt_df[TOP_P].to_list()
+    for index in tqdm(range(len(prompt_df))):
+
+        message_batch = messages[index]
+
+        temperature = temperatures[index]
+        top_p = top_ps[index]
         row = dict()
-        row[PROMPT] = system_prompt + "\n\n".join(examples)
+        row[PROMPT] = message_batch
         row[TEMPERATURE] = temperature
         row[TOP_P] = top_p
         row[MODEL] = model
         row[TARGET] = 1
         row["category"] = category
         if model.find(BEDROCK) >= 0:
-            text = bedrock_generation.prompt_with_few_shot_examples(system_prompt, examples, model, temperature, top_p, max_completion_tokens=max_completion_tokens)
+            text = bedrock_generation.prompt(messages, model, temperature, top_p, max_completion_tokens=max_completion_tokens)
         elif model.find(DEEPSEEK) >= 0:
-            messages = openai_generation.format_message_with_few_shot_examples(system_prompt, examples)
-            text = deepseek_generation.prompt_with_few_shot_examples(messages, model, temperature, top_p, max_completion_tokens=max_completion_tokens)[0]
+            text = deepseek_generation.prompt(messages, model, temperature, top_p, max_completion_tokens=max_completion_tokens)[0]
         elif model.find(GEMINI) >= 0:
-            prompt = "\n\n".join(examples)
-            text = google_generation.prompt_with_few_shot_examples(system_prompt, prompt, model, temperature, top_p, max_completion_tokens)
+            text = google_generation.prompt(messages,model, temperature, top_p, max_completion_tokens)
         else:
             raise Exception("Model type not supported")
         row[TEXT] = text
         rows.append(row)
         pd.DataFrame(rows).to_json(output_path, orient="records", indent=4, index=False)
-        if (count % wait_after_every == 0) and (count > 0):
+        if (index % wait_after_every == 0) and (index > 0):
             time.sleep(sleep_time)
-
 
     pd.DataFrame(rows).to_json(output_path, orient="records", indent=4, index=False)
 

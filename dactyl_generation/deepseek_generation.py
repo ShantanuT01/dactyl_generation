@@ -14,35 +14,8 @@ DEEPSEEK_CLIENT = OpenAI(
     base_url="https://api.deepinfra.com/v1/openai"
 )
 
-def format_message_with_few_shot_examples(system_prompt: str,  examples: List[str]) -> list:
-    """
-    Formats message with examples to pass to OpenAI API which is the same format for DeepInfra's API.
 
-    Args:
-        system_prompt: System prompt to pass to DeepSeek.
-        examples: String examples
-
-    Returns:
-        messages: list of messages to pass to API.
-    """
-
-
-    messages = list()
-    messages.append(
-        {
-            ROLE: SYSTEM,
-            CONTENT: system_prompt
-        }
-    )
-    for example in examples:
-        message = dict()
-        message[ROLE] = USER
-        message[CONTENT] = example
-        messages.append(message)
-    return messages
-
-
-def prompt_with_few_shot_examples(messages: List[dict], model: str, temperature:float , top_p:float, max_completion_tokens:int=512,number_of_responses:int=1) -> list:
+def prompt(messages: List[dict], model: str, temperature:float , top_p:float, max_completion_tokens:int=512,number_of_responses:int=1) -> list:
     """
     Pass a single list of messages to DeepSeek to generate text.
 
