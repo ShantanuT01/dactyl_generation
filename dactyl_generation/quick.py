@@ -155,7 +155,7 @@ def generate_texts_with_few_shot_prompting(model: str, human_dataframe: pd.DataF
             text = deepseek_generation.prompt_with_few_shot_examples(messages, model, temperature, top_p, max_completion_tokens=max_completion_tokens)[0]
         elif model.find(GEMINI) >= 0:
             prompt = "\n\n".join(examples)
-            text = google_generation.prompt_with_few_shot_examples(system_prompt, prompt, model, temperature, top_p)
+            text = google_generation.prompt_with_few_shot_examples(system_prompt, prompt, model, temperature, top_p, max_completion_tokens)
         else:
             raise Exception("Model type not supported")
         row[TEXT] = text
