@@ -70,13 +70,14 @@ def prompt(messages: List[dict], model_name: str, temperature: float, top_p: flo
         max_output_tokens=max_completion_tokens,
         top_p=top_p,
         temperature=temperature,
-        response_mime_type="application/json",
-        response_schema=GeneratedResponse,
+       # response_mime_type="application/json",
+       # response_schema=GeneratedResponse,
         safety_settings=GEMINI_SAFETY_SETTINGS
     )
 
     response = GOOGLE_CLIENT.models.generate_content(model=model_name, contents=user_instructions, config=prompt_config)
-    return response.parsed.text
+    #print(response)
+    return response.text
 
 
 
