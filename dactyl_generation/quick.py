@@ -115,11 +115,11 @@ def generate_texts_streaming(model: str, prompts_path: str, output_path: str, ma
         row[TARGET] = 1
         row["category"] = category
         if model.find(BEDROCK) >= 0:
-            text = bedrock_generation.prompt(messages, model, temperature, top_p, max_completion_tokens=max_completion_tokens)
+            text = bedrock_generation.prompt(message_batch, model, temperature, top_p, max_completion_tokens=max_completion_tokens)
         elif model.find(DEEPSEEK) >= 0:
-            text = deepseek_generation.prompt(messages, model, temperature, top_p, max_completion_tokens=max_completion_tokens)[0]
+            text = deepseek_generation.prompt(message_batch, model, temperature, top_p, max_completion_tokens=max_completion_tokens)[0]
         elif model.find(GEMINI) >= 0:
-            text = google_generation.prompt(messages,model, temperature, top_p, max_completion_tokens)
+            text = google_generation.prompt(message_batch,model, temperature, top_p, max_completion_tokens)
         else:
             raise Exception("Model type not supported")
         row[TEXT] = text
