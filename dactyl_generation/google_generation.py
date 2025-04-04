@@ -76,7 +76,7 @@ def prompt(messages: List[dict], model_name: str, temperature: float, top_p: flo
     )
 
     response = GOOGLE_CLIENT.models.generate_content(model=model_name, contents=user_instructions, config=prompt_config)
-    return response.parsed.text
+    return response.parsed[TEXT]
 
 
 
