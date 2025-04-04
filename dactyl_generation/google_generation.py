@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from typing import List
 import typing_extensions as typing
 from dactyl_generation.constants import *
-
+from pydantic import BaseModel
 
 
 load_dotenv()
@@ -40,7 +40,7 @@ GEMINI_SAFETY_SETTINGS = [
     )
 ]
 
-class GeneratedResponse(typing.TypedDict):
+class GeneratedResponse(BaseModel):
     text: str
 
 def prompt(messages: List[dict], model_name: str, temperature: float, top_p: float, max_completion_tokens: int) -> str:
