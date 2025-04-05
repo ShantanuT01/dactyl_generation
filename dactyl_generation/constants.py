@@ -9,7 +9,8 @@ GPT_4o = "gpt-4o"
 GPT_4o_MINI = "gpt-4o-mini"
 DEEPSEEK_V3 = "deepseek-ai/DeepSeek-V3"
 
-
+LLAMA_START_HEADER = "<|start_header_id|>"
+LLAMA_END_HEADER = "<|end_header_id|>"
 BODY = "body"
 MESSAGE = "message"
 MESSAGES = "messages"
@@ -34,6 +35,8 @@ TYPE = "type"
 MAX_TOKENS = "max_tokens"
 BATCH = "batch"
 BLOCK_NONE = "BLOCK_NONE"
+MODELINPUT = "modelInput"
+RECORDID = "recordId"
 
 
 EXAMPLES = "examples"

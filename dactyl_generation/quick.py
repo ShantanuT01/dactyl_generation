@@ -13,7 +13,7 @@ from tqdm import tqdm
 from typing import List
 
 
-def generate_texts_using_batch(model: str, output_path: str, prompts_path: str, max_completion_tokens: int = 512) -> None:
+def generate_texts_using_batch(model: str, output_path: str, prompts_df: pd.DataFrame, max_completion_tokens: int = 512) -> None:
     """
     Generates prompts to use using batch APIs from select providers using example prompts path.
     Prompt and batch data are saved to the output_path as a JSON.
@@ -21,7 +21,7 @@ def generate_texts_using_batch(model: str, output_path: str, prompts_path: str, 
     Args:
         model: Name of model.
         output_path: output path to save prompt metadata
-        prompts_path: prompts saved in JSON format from the `select_few_shot_examples_from_dataset` function.
+        prompts_df: prompts for each generation
         max_completion_tokens: max completion tokens
 
 
@@ -29,10 +29,10 @@ def generate_texts_using_batch(model: str, output_path: str, prompts_path: str, 
         None
     """
 
-    prompt_df = pd.read_json(prompts_path)
-    messages = prompt_df[MESSAGES].to_list()
-    temperatures = prompt_df[TEMPERATURE].to_list()
-    top_ps = prompt_df[TOP_P].to_list()
+
+    messages = prompts_df[MESSAGES].to_list()
+    temperatures = prompts_df[TEMPERATURE].to_list()
+    top_ps = prompts_df[TOP_P].to_list()
 
     if model.find(CLAUDE) >= 0:
         parameters = anthropic_generation.create_batch_job(messages, model, temperatures,top_ps,max_completion_tokens=max_completion_tokens)
@@ -77,7 +77,7 @@ def get_batch_job_results(file_path: str, output_path: str) -> None:
     df.to_json(output_path,index=False, orient='records', indent=4)
 
 
-def generate_texts_streaming(model: str, prompts_path: str, output_path: str, max_completion_tokens: int =512, category: str ="", wait_after_every:int =20, sleep_time: int =30) -> None:
+def generate_texts_streaming(model: str, prompts_df: pd.DataFrame, output_path: str, max_completion_tokens: int =512, category: str ="", wait_after_every:int =20, sleep_time: int =30) -> None:
     """
     This function generates examples from an API live, no batching. If `example_prompts_path` is given, the function will use all prompts in the JSON file.
     Otherwise, it will generate random few shot examples.
@@ -85,7 +85,7 @@ def generate_texts_streaming(model: str, prompts_path: str, output_path: str, ma
 
     Args:
         model: name of model
-        prompts_path: JSON file containing OpenAI API style prompts
+        prompts_df: dataframe containing prompts
         output_path: output path to save JSON file
         max_completion_tokens: maximum number of tokens per generation
         category: categorical column
@@ -97,11 +97,11 @@ def generate_texts_streaming(model: str, prompts_path: str, output_path: str, ma
         None
     """
     rows = list()
-    prompt_df = pd.read_json(prompts_path)
-    messages = prompt_df[MESSAGES].to_list()
-    temperatures = prompt_df[TEMPERATURE].to_list()
-    top_ps = prompt_df[TOP_P].to_list()
-    for index in tqdm(range(len(prompt_df))):
+
+    messages = prompts_df[MESSAGES].to_list()
+    temperatures = prompts_df[TEMPERATURE].to_list()
+    top_ps = prompts_df[TOP_P].to_list()
+    for index in tqdm(range(len(prompts_df))):
 
         message_batch = messages[index]
 
