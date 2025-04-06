@@ -10,8 +10,8 @@ from typing import List
 load_dotenv()
 
 DEEPSEEK_CLIENT = OpenAI(
-    api_key=os.environ["DEEPINFRA_API_KEY"],
-    base_url="https://api.deepinfra.com/v1/openai"
+    api_key=os.environ["FIREWORKS_AI_API_KEY"],
+    base_url="https://api.fireworks.ai/inference/v1"
 )
 
 

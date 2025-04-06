@@ -93,7 +93,7 @@ def create_batch_job(s3_input_path: str, s3_output_path: str, model: str, role_a
     Returns:
         jobArn: dictionary containing single string
     """
-    bedrock = boto3.client(service_name="bedrock")
+    bedrock = boto3.client(service_name="bedrock",region_name="us-east-1")
     input_data_config = (
         {
             "s3InputDataConfig": {
