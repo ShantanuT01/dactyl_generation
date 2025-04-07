@@ -10,6 +10,7 @@ import json
 import numpy as np
 from io import BytesIO
 from typing import List, Any
+from datetime import datetime, timezone
 
 load_dotenv()
 
@@ -112,6 +113,7 @@ def get_batch_job_output(file_path: str) -> pd.DataFrame:
         generation = dict()
         generation[TEXT] = response[BODY][CHOICES][0][MESSAGE][CONTENT]
         generation[CUSTOM_ID] = custom_id
+        generation[TIMESTAMP] =  str(datetime.fromtimestamp(response[BODY][CREATED],tz=timezone.utc))
         generations.append(generation)
     generations = pd.DataFrame(generations)
     requests = data[INPUT_FILE]

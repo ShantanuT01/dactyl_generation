@@ -10,7 +10,7 @@ import json
 import numpy as np
 import pandas as pd
 from typing import List, Tuple
-
+from datetime import datetime, timezone
 from dactyl_generation.constants import *
 
 load_dotenv()
@@ -122,6 +122,7 @@ def get_batch_job_output(file_path: str) -> pd.DataFrame:
         row[CUSTOM_ID] = response[CUSTOM_ID]
         row[TEXT] = response[RESPONSE][BODY][CHOICES][0][MESSAGE][CONTENT]
         row[MODEL] = response[RESPONSE][BODY][MODEL]
+        row[TIMESTAMP] = str(datetime.fromtimestamp(response[RESPONSE][BODY][CREATED], tz=timezone.utc))
         rows.append(row)
     raw_prompts = data[PROMPTS]
     temperatures = list()

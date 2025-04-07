@@ -37,6 +37,8 @@ BATCH = "batch"
 BLOCK_NONE = "BLOCK_NONE"
 MODELINPUT = "modelInput"
 RECORDID = "recordId"
+TIMESTAMP = "timestamp"
+CREATED = "created"
 
 
 EXAMPLES = "examples"

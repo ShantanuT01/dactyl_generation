@@ -11,7 +11,7 @@ import json
 import requests
 import pandas as pd
 from typing import List
-
+from datetime import datetime, timezone
 from dactyl_generation.constants import *
 dotenv.load_dotenv()
 
@@ -116,7 +116,8 @@ def create_batch_job(messages:List[List[dict]], model: str, temperatures:List[fl
     return {
         BATCH_ID: message_batch.id,
         PROMPTS: requests,
-        API_CALL: ANTHROPIC
+        API_CALL: ANTHROPIC,
+        TIMESTAMP:  str(datetime.now(timezone.utc))
     }
 
 
@@ -146,6 +147,7 @@ def get_batch_job_output(file_path: str) -> pd.DataFrame:
         generation[MODEL] = object[RESULT][MESSAGE][MODEL]
         generations.append(generation)
     generations = pd.DataFrame(generations)
+    generations[TIMESTAMP] = data[TIMESTAMP]
     prompt_rows = list()
     for prompt in data[PROMPTS]:
         row = dict()

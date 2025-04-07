@@ -10,6 +10,7 @@ import tempfile
 import time
 import pandas as pd
 from tqdm import tqdm
+from datetime import datetime, timezone
 from typing import List
 
 
@@ -123,6 +124,7 @@ def generate_texts_streaming(model: str, prompts_df: pd.DataFrame, output_path: 
         else:
             raise Exception("Model type not supported")
         row[TEXT] = text
+        row[TIMESTAMP] = str(datetime.now(timezone.utc))
         rows.append(row)
         pd.DataFrame(rows).to_json(output_path, orient="records", indent=4, index=False)
         if (index % wait_after_every == 0) and (index > 0):
