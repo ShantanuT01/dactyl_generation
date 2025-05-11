@@ -121,5 +121,3 @@ def create_batch_job(s3_input_path: str, s3_output_path: str, model: str, role_a
     }
 
 
-
-
