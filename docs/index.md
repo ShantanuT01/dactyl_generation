@@ -11,25 +11,15 @@ We aim to build a dataset with the following properties:
 - :material-elevation-rise: Adaptable: We aim for living dataset that grows as AIG text detection evolves.
 - :material-diversify: Diverse: We are currently at six domains, but we intend to expand to more.
 
-## Supported Models
+## Supported Providers
 
-We support the following batch APIs which allow for significant cost savings.
+We support batch inference for some providers. Batch inference often gives a 50% discount compared to using the streaming API. 
 
-| Batch Model       | Model ID                     |
-|-------------------|------------------------------|
-| GPT-4o-mini       | `gpt-4o-mini`                |
-| GPT-4o            | `gpt-4o-2024-11-20`          |
-| Claude 3.5 Haiku  | `claude-3-5-haiku-20241022`  |
-| Claude 3.5 Sonnet | `claude-3-5-sonnet-20241022` |
-| Mistral Small     | `mistral-small-latest`       |
-| Mistral Large     | `mistral-large-latest`       |
-
-We also support the following streaming models.
-
-| Streaming Model                | Model Entry                                                      |
-|--------------------------------|------------------------------------------------------------------|
-| Gemini 1.5 Flash               | `gemini-1.5-flash`                                                 |
-| Gemini 1.5 Pro                 | `gemini-1.5-pro`                                                   |
-| Bedrock Llama 3.3 70B Instruct | `bedrock/us.meta.llama3-3-70b-instruct-v1:0`                       |
-| Bedrock Llama 3.2 90B Instruct | `bedrock/us.meta.llama3-2-90b-instruct-v1:0`                       |
-| DeepSeek-V3                    | `deepseek-ai/DeepSeek-V3`                                          |
+|   **Provider**   | **Batch** | **Streaming** |
+|:----------------:|:---------:|:-------------:|
+|    **OpenAI**    |  :white_check_mark:         |   :white_check_mark:            |
+|   **Anthropic**  |   :white_check_mark:        |    :x:           |
+|    **Mistral**   |   :white_check_mark:        |      :x:         |
+|    **Gemini**    |     :x:      |     :white_check_mark:          |
+| **Fireworks AI** |    :x:       |    :white_check_mark:           |
+|    **Bedrock**   |     :white_check_mark:      | :white_check_mark:              |

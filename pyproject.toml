@@ -8,7 +8,7 @@ version = "0.0.1"
 authors = [
     { name="Shantanu Thorat"},
 ]
-description = "LLM helper package to generate examples."
+description = "LLM helper package to generate AI-generated texts."
 readme = "README.md"
 requires-python = ">=3.8"
 classifiers = [
@@ -27,7 +27,8 @@ dependencies = [
     "Requests",
     "tqdm",
     "typing_extensions",
-    "google-generativeai"
+    "google-generativeai",
+    "boto3"
 ]
 license = {text = "MIT"}
 

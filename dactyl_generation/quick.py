@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from typing import List
 
 
-def generate_texts_using_batch(model: str, output_path: str, prompts_df: pd.DataFrame, max_completion_tokens: int = 512) -> None:
+def generate_texts_using_batch(output_path: str, prompts_df: pd.DataFrame, api_provider: str, aws_args: dict = None) -> None:
     """
     Generates prompts to use using batch APIs from select providers using example prompts path.
     Prompt and batch data are saved to the output_path as a JSON.
@@ -23,7 +23,8 @@ def generate_texts_using_batch(model: str, output_path: str, prompts_df: pd.Data
         model: Name of model.
         output_path: output path to save prompt metadata
         prompts_df: prompts for each generation
-        max_completion_tokens: max completion tokens
+        api_provider: Batch API provider to route request to.
+        aws_args: dictionary containing AWS Bedrock args.
 
 
     Returns:
@@ -31,26 +32,27 @@ def generate_texts_using_batch(model: str, output_path: str, prompts_df: pd.Data
     """
 
 
-    messages = prompts_df[MESSAGES].to_list()
-    temperatures = prompts_df[TEMPERATURE].to_list()
-    top_ps = prompts_df[TOP_P].to_list()
 
-    if model.find(CLAUDE) >= 0:
-        parameters = anthropic_generation.create_batch_job(messages, model, temperatures,top_ps,max_completion_tokens=max_completion_tokens)
+    if api_provider == ANTHROPIC:
+        parameters = anthropic_generation.create_batch_job(prompts_df)
         with open(output_path, 'w+') as file:
             json.dump(parameters, file, indent=4)
-    elif model.find(GPT) >= 0:
-        parameters = openai_generation.create_batch_job(messages, model, max_completion_tokens, temperatures, top_ps)
+    elif api_provider == OPENAI:
+        parameters = openai_generation.create_batch_job(prompts_df)
         with open(output_path, 'w+') as file:
             json.dump(parameters, file, indent=4)
-    elif model.find(MISTRAL) >= 0:
+    elif api_provider == MISTRAL:
         file_name = next(tempfile._get_candidate_names())
         file_name = f"{file_name}.jsonl"
-        parameters = mistral_generation.create_batch_job(file_name,messages, model, max_tokens=max_completion_tokens, temperatures=temperatures, top_ps=top_ps)
+        parameters = mistral_generation.create_batch_job(file_name,prompts_df)
+        with open(output_path, 'w+') as file:
+            json.dump(parameters, file, indent=4)
+    elif api_provider == BEDROCK:
+        parameters = bedrock_generation.create_batch_job(prompts_df, **aws_args)
         with open(output_path, 'w+') as file:
             json.dump(parameters, file, indent=4)
     else:
-        raise Exception("Model type not supported")
+        raise Exception("Model type not supported for batch inference.")
 
 
 def get_batch_job_results(file_path: str, output_path: str) -> None:
@@ -73,6 +75,8 @@ def get_batch_job_results(file_path: str, output_path: str) -> None:
         df = mistral_generation.get_batch_job_output(file_path)
     elif api_call == OPENAI:
         df = openai_generation.get_batch_job_output(file_path)
+    elif api_call == BEDROCK:
+        df = bedrock_generation.get_batch_job_output(file_path)
     else:
         raise Exception(f"API call {api_call} not supported")
     df.to_json(output_path,index=False, orient='records', indent=4)

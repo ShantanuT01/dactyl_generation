@@ -1,6 +1,8 @@
 """
 Generates texts with using the Anthropic Batch API.
 """
+import copy
+
 import anthropic
 import dotenv
 import os
@@ -52,48 +54,44 @@ def convert_anthropic_system_message_to_openai_system_message(anthropic_message:
     ret[CONTENT] = anthropic_message[TEXT]
     return ret
 
-def get_message_batch(messages: List[List[dict]], model: str, temperatures: List[float], top_ps: List[float],max_tokens: int) -> List[Request]:
+def get_message_batch(prompts_df: pd.DataFrame) -> List[Request]:
     """
     Generate a batch of requests from list of prompts
 
     Args:
-        messages: prompts
-        model: model name
-        temperatures: list of temperatures
-        top_ps: list of top p values
-        max_tokens: maximum tokens to generate
+        prompts_df: DataFrame where each row is an API call to the Anthropic API.
 
     Returns:
         requests: list of requests
     """
     requests = list()
-    for index, message_batch in enumerate(messages):
+    calls = prompts_df.to_dict(orient="records")
+    digits_length = int(np.log10(len(calls))) + 1
+    for i, call in enumerate(calls):
         system_messages = list()
         normal_messages = list()
-        for message in message_batch:
+        for message in call[PROMPT]:
             if message[ROLE] == SYSTEM:
                 system_messages.append(convert_openai_system_message_to_anthropic_system_message(message))
             else:
                 normal_messages.append(message)
 
-
+        call[SYSTEM] = system_messages
+        call[MESSAGES] = normal_messages
+        message_parameters = copy.copy(call)
+        del message_parameters[PROMPT]
         # each individual request maps to one few shot set
         request = Request(
-            custom_id=f"request-{index}",
+            custom_id=f"request-{str(i).zfill(digits_length)}",
             params=MessageCreateParamsNonStreaming(
-                model=model,
-                temperature=temperatures[index],
-                top_p=top_ps[index],
-                system=system_messages,
-                messages=normal_messages,
-                max_tokens=max_tokens
+                **message_parameters
             )
         )
         requests.append(request)
     return requests
 
 
-def create_batch_job(messages:List[List[dict]], model: str, temperatures:List[float],top_ps: List[float],max_completion_tokens: int =512) -> dict:
+def create_batch_job(prompts_df: pd.DataFrame) -> dict:
     """
     Requests message batch to Anthropic API given a list of examples.
 
@@ -107,15 +105,15 @@ def create_batch_job(messages:List[List[dict]], model: str, temperatures:List[fl
     Returns:
         request_data: requests sent to Anthropic API
     """
-    assert(len(temperatures) == len(top_ps))
-    assert(len(messages) == len(temperatures))
 
-    requests = get_message_batch(messages, model,temperatures, top_ps, max_completion_tokens)
+
+    requests = get_message_batch(prompts_df)
+    custom_ids = [request[CUSTOM_ID] for request in requests]
     message_batch = ANTHROPIC_CLIENT.messages.batches.create(requests=requests)
-
+    prompts_df[CUSTOM_ID] = custom_ids
     return {
         BATCH_ID: message_batch.id,
-        PROMPTS: requests,
+        PROMPTS: prompts_df.to_dict(orient='records'),
         API_CALL: ANTHROPIC,
         TIMESTAMP:  str(datetime.now(timezone.utc))
     }
@@ -144,22 +142,9 @@ def get_batch_job_output(file_path: str) -> pd.DataFrame:
         generation = dict()
         generation[CUSTOM_ID] = object[CUSTOM_ID]
         generation[TEXT] = object[RESULT][MESSAGE][CONTENT][0][TEXT]
-        generation[MODEL] = object[RESULT][MESSAGE][MODEL]
         generations.append(generation)
     generations = pd.DataFrame(generations)
     generations[TIMESTAMP] = data[TIMESTAMP]
-    prompt_rows = list()
-    for prompt in data[PROMPTS]:
-        row = dict()
-        row[CUSTOM_ID] = prompt[CUSTOM_ID]
-        row[TEMPERATURE] = prompt[PARAMS][TEMPERATURE]
-        row[TOP_P] = prompt[PARAMS][TOP_P]
-        system_prompts = prompt[PARAMS][SYSTEM]
-        prompts = list()
-        for system_prompt in system_prompts:
-            prompts.append(convert_anthropic_system_message_to_openai_system_message(system_prompt))
-        prompts.extend(prompt[PARAMS][MESSAGES])
-        row[PROMPT] = prompts
-        prompt_rows.append(row)
+    prompt_rows = pd.DataFrame(data[PROMPTS])
     ret = pd.DataFrame(prompt_rows)
     return generations.merge(ret, on=CUSTOM_ID, how='left')

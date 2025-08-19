@@ -18,52 +18,36 @@ OPENAI_CLIENT = OpenAI(
     api_key=os.environ["OPENAI_API_KEY"]  # This is the default and can be omitted
 )
 
-
-def create_individual_request(custom_id: Any, model: str, messages:List[dict], max_completion_tokens: int, temperature: float, top_p: float) -> dict:
+def create_individual_request(custom_id: str, message_body: dict) -> dict:
     """
-    Creates OpenAI REST API request for a single request
-
+    Creates OpenAI REST API request for a single request.
     Args:
-        custom_id: Custom ID of request.
-        model: name of model.
-        messages: List of messages to pass.
-        max_completion_tokens: Max token generation limit.
-        temperature: temperature
-        top_p: top-p value
+        custom_id: Custom ID of request
+        message_body: dictionary of a single message. This includes the messages, max_completion_token parameters etc.
 
     Returns:
         request: individual request formatted for OpenAI REST API.
     """
-    request = {CUSTOM_ID: str(custom_id), "method": "POST", "url": "/v1/chat/completions", BODY: {
-        MESSAGES: messages,
-        MODEL: model,
-        TEMPERATURE: temperature,
-        TOP_P: top_p,
-        MAX_COMPLETION_TOKENS: max_completion_tokens
-    }}
+    request = {CUSTOM_ID: str(custom_id), "method": "POST", "url": "/v1/chat/completions", BODY: message_body}
     return request
 
 
-def create_batch_job(messages: List[List[dict]], model: str, max_tokens: int, temperatures: List[float], top_ps: List[float]) -> dict:
+def create_batch_job(prompts_df: pd.DataFrame) -> dict:
     """
        Creates batch job of prompts given messages and temperatures.
 
        Args:
-           messages: List of list of messages to pass.
-           model: model name
-           max_tokens: maximum token generation limit
-           temperatures: temperatures
-           top_ps: top-p values
+           prompts_df: DataFrame where each row corresponds to an OpenAI API call.
 
        Returns:
            results: dictionary containing request information
        """
-    assert(len(temperatures) == len(top_ps))
-    assert(len(messages) == len(temperatures))
+    digits_length = int(np.log10(len(prompts_df))) + 1
     json_strs = list()
     requests = list()
-    for i, batch in enumerate(messages):
-        request = create_individual_request(f"request-{i}", model, batch, max_tokens, temperatures[i], top_ps[i])
+    records = prompts_df.to_dict("records")
+    for i, record in enumerate(records):
+        request = create_individual_request(f"request-{str(i).zfill(digits_length)}", record)
         requests.append(request)
         json_strs.append(json.dumps(request))
     buffer = BytesIO(("\n".join(json_strs)).encode("utf-8"))
@@ -116,27 +100,9 @@ def get_batch_job_output(file_path: str) -> pd.DataFrame:
         generation[TIMESTAMP] =  str(datetime.fromtimestamp(response[BODY][CREATED],tz=timezone.utc))
         generations.append(generation)
     generations = pd.DataFrame(generations)
-    requests = data[INPUT_FILE]
-    prompts = list()
-    temperatures = list()
-    top_ps = list()
-    models = list()
-    custom_ids =  list()
-    for request in requests:
-        prompt = request[BODY][MESSAGES]
-        prompts.append(prompt)
-        temperatures.append(request[BODY][TEMPERATURE])
-        top_ps.append(request[BODY][TOP_P])
-        models.append(request[BODY][MODEL])
-        custom_ids.append(request[CUSTOM_ID])
+    requests = pd.DataFrame(data[INPUT_FILE])
 
-    ret = pd.DataFrame()
-    ret[PROMPT] = prompts
-    ret[MODEL] = models
-    ret[TEMPERATURE] = temperatures
-    ret[TOP_P] = top_ps
-    ret[CUSTOM_ID] = custom_ids
-    generations = generations.merge(ret, on=CUSTOM_ID, how='left')
+    generations = generations.merge(requests, on=CUSTOM_ID, how='left')
     return generations
 
 

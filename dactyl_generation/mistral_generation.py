@@ -1,6 +1,8 @@
 """
 Generates texts with using the Mistral Batch API.
 """
+import copy
+
 import mistralai.files
 from mistralai import Mistral, File
 from dotenv import load_dotenv
@@ -18,33 +20,26 @@ load_dotenv()
 MISTRAL_CLIENT = Mistral(api_key=os.environ["MISTRAL_API_KEY"])
 
 
-def create_message_batch(file_name: str, messages: List[List[dict]], max_tokens: int, temperatures: List[float], top_ps: List[float]) -> Tuple[List[dict], mistralai.models.UploadFileOut]:
+def create_message_batch(file_name: str, prompts_df: pd.DataFrame) -> Tuple[List[dict], mistralai.models.UploadFileOut]:
     """
    Creates batch of messages to send to Mistral API.
 
     Args:
         file_name: Name of file in Mistral API to save as.
-        messages: list of list of messages to pass.
-        max_tokens: maximum number of tokens to generate
-        temperatures: temperatures of each prompt
-        top_ps: top-p values of each prompt
+        prompts_df: DataFrame containing prompts and generation parameters
 
     Returns:
         tuple: List of requests sent, UploadFileOut object
     """
-    assert(len(temperatures) == len(top_ps))
-    assert(len(messages) == len(temperatures))
+
     buffer = BytesIO()
     list_of_requests = list()
+    messages = prompts_df.to_dict(orient="records")
+    digits_length = int(np.log10(len(prompts_df))) + 1
     for index, message_batch in enumerate(messages):
         request = {
-            CUSTOM_ID: f"request-{index}",
-            BODY: {
-                MESSAGES: message_batch,
-                MAX_TOKENS: max_tokens,
-                TEMPERATURE: temperatures[index],
-                TOP_P: top_ps[index]
-            }
+            CUSTOM_ID: f"request-{str(index).zfill(digits_length)}",
+            BODY: message_batch
         }
         list_of_requests.append(request)
         buffer.write((json.dumps(request)+"\n").encode("utf-8"))
@@ -72,22 +67,19 @@ def start_batch_job(input_file: mistralai.models.UploadFileOut, model: str) -> m
     )
     return batch_job
 
-def create_batch_job(file_name: str, messages: List[List[dict]], model: str,max_tokens: int,  temperatures: List[float], top_ps: List[float]) -> dict:
+def create_batch_job(file_name: str, prompts_df: pd.DataFrame) -> dict:
     """
     Creates batch job for set of prompts given file name to save Mistral prompts to.
     Args:
         file_name: name of file to upload to Mistral API.
-        messages: List of list of messages to pass.
-        model: name of model
-        max_tokens: maximum number of tokens per generation
-        temperatures: list of temperatures
-        top_ps: list of top_p values
+        prompts_df: DataFrame containing generation prompts and parameters.
 
     Returns:
         info: dictionary containing batch job info
     """
-
-    prompts, input_file = create_message_batch(file_name, messages,  max_tokens, temperatures, top_ps)
+    assert(len(prompts_df[MODEL].unique()) == 1)
+    model = prompts_df[MODEL].unique()[0]
+    prompts, input_file = create_message_batch(file_name, prompts_df)
     batch_job = start_batch_job(input_file, model)
     input_file = input_file.model_dump(mode="json")
     batch_job = batch_job.model_dump(mode="json")
@@ -121,27 +113,12 @@ def get_batch_job_output(file_path: str) -> pd.DataFrame:
         row = dict()
         row[CUSTOM_ID] = response[CUSTOM_ID]
         row[TEXT] = response[RESPONSE][BODY][CHOICES][0][MESSAGE][CONTENT]
-        row[MODEL] = response[RESPONSE][BODY][MODEL]
         row[TIMESTAMP] = str(datetime.fromtimestamp(response[RESPONSE][BODY][CREATED], tz=timezone.utc))
         rows.append(row)
-    raw_prompts = data[PROMPTS]
-    temperatures = list()
-    top_ps = list()
-    prompts = list()
-    custom_ids = list()
-    for prompt in raw_prompts:
-        prompts.append(prompt[BODY][MESSAGES])
-        temperatures.append(prompt[BODY][TEMPERATURE])
-        top_ps.append(prompt[BODY][TOP_P])
-        custom_ids.append(prompt[CUSTOM_ID])
-
+    raw_prompts = pd.DataFrame([{**prompt[BODY], **{CUSTOM_ID: prompt[CUSTOM_ID]}} for prompt in data[PROMPTS]])
+    print(raw_prompts.head())
     generations = pd.DataFrame(rows)
-    ret = pd.DataFrame()
-    ret[PROMPT] = prompts
-    ret[TEMPERATURE] = temperatures
-    ret[TOP_P] = top_ps
-    ret[CUSTOM_ID] = custom_ids
-    return generations.merge(ret, on=CUSTOM_ID,how="left")
+    return generations.merge(raw_prompts, on=CUSTOM_ID,how="left")
 
 
 
