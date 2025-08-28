@@ -4,7 +4,7 @@ A Python package to generate LLM data from various APIs.
 
 ## Installation
 ```bash
-pip install git+https://github.com/ShantanuT01/dactyl_generation.git
+pip install dactyl_generation
 ```
 
 ## Usage
