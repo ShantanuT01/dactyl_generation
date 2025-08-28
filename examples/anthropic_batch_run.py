@@ -7,7 +7,7 @@ dotenv.load_dotenv()
 from dactyl_generation.anthropic_generation import create_batch_job, get_batch_job_output
 
 prompts_df = pd.read_json("local-tiny-test.json")
-# add additional model info and rename prompt column
+# add additional model info
 prompts_df["model"] = "claude-3-5-haiku-20241022"
 prompts_df["max_tokens"] = 100
 prompts_df["top_k"] = 300

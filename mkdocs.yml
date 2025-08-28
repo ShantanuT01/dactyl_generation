@@ -5,6 +5,8 @@ theme:
   palette:
     primary: teal
   favicon: "assets/web/icons8-pterodactyl-color-120.png"
+  features:
+    - content.code.copy
 
 plugins:
   - mkdocstrings:
@@ -25,7 +27,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Tutorial: tutorial.md
-  - Dataset: dataset.md
+  - DACTYL Dataset: dataset.md
   - Prompt Schema: promptschema.md
   - API Reference:
     - Gemini Generation: API/gemini_generation.md

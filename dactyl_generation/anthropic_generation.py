@@ -96,11 +96,7 @@ def create_batch_job(prompts_df: pd.DataFrame) -> dict:
     Requests message batch to Anthropic API given a list of examples.
 
     Args:
-        messages: List of messages to pass
-        model: name of model
-        temperatures: list of temperatures for each individual prompt
-        top_ps: list of top-p values
-        max_completion_tokens: maximum number of tokens to generate
+        prompts_df: Dataframe containing prompts to run.
 
     Returns:
         request_data: requests sent to Anthropic API

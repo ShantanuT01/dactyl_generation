@@ -19,12 +19,11 @@ FIREWORKS_AI_API_KEY=""
     AWS Bedrock (`boto3`) requires a different setup. Make sure that you have boto3 installed in the same environment as `dactyl_generation`!
 
 
-## Using batch inference for GPT-5
+## Using batch inference for GPT-4o-mini
 
 Store your desired prompts in a JSON file. For example:
 
-**openai-local-tiny-test.json**
-```json
+```json title="prompts.json"
  [
   {
         "prompt":[
@@ -42,20 +41,31 @@ Store your desired prompts in a JSON file. For example:
     }
 ]
 ```
-```python
+The first step is to _create_ the batch job. After this, you can save the job info data as a JSON file. 
+```python title="create_gpt_4o_mini_batch_job.py"
 import dotenv
 dotenv.load_dotenv()
-
-from dactyl_generation.quick import generate_texts_using_batch
+import json
+from dactyl_generation.openai_generation import create_batch_job
 import pandas as pd
 
-df = pd.read_json("openai-local-tiny-test.json")
+df = pd.read_json("prompts.json")
+# add in desired parameters
+df["model"] = "gpt-4o-mini-2024-07-18"
+df["frequency_penalty"] = 1.1
+df = df.rename(columns={"prompt":"messages"})
 
-generate_texts_using_batch("gpt-5", "openai-test-prompts.json",df, 512)
+job_info_file_path = "gpt-4o-mini-job-info.json"
+job_info = create_batch_job(df)
+with open(job_info_file_path,'w+') as f:
+    json.dump(job_info, f, indent=4)
 ```
 
 After the batch runs, you can fetch the response results:
-```python
-from dactyl_generation.quick import get_batch_job_results
-get_batch_job_results("openai-test-prompts.json","openai-batch-results.json")
+```python title="get_batch_results.py"
+from dactyl_generation.openai_generation import get_batch_job_output
+job_info_file_path = "gpt-4o-mini-job-info.json"
+output_file_path = "gpt-4o-mini-outputs.json"
+results = get_batch_job_output(job_info_file_path)
+results.to_json(output_file_path,index=False,orient="records",indent=4)
 ```

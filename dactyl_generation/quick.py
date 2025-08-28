@@ -20,7 +20,6 @@ def generate_texts_using_batch(output_path: str, prompts_df: pd.DataFrame, api_p
     Prompt and batch data are saved to the output_path as a JSON.
 
     Args:
-        model: Name of model.
         output_path: output path to save prompt metadata
         prompts_df: prompts for each generation
         api_provider: Batch API provider to route request to.
