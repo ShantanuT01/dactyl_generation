@@ -19,3 +19,5 @@ load_dotenv()
 from dactyl_generation.quick import *
 
 ```
+
+Icons by [Icons8](https://icons8.com/). 
