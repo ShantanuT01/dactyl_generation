@@ -1,4 +1,5 @@
 site_name: DACTYL Generation
+site_url: !ENV READTHEDOCS_CANONICAL_URL
 theme:
   name: "material"
   logo: "assets/icons8-pterodactyl-480.svg"
@@ -7,6 +8,7 @@ theme:
   favicon: "assets/web/icons8-pterodactyl-color-120.png"
   features:
     - content.code.copy
+
 
 plugins:
   - mkdocstrings:
