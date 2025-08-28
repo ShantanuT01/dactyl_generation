@@ -26,3 +26,6 @@ We support batch inference for some providers. Batch inference often gives a 50%
 |    **Gemini**    |     :x:      | :white_check_mark: |
 | **Fireworks AI** |    :x:       | :white_check_mark: |
 |    **Bedrock**   |     :white_check_mark:      | :white_check_mark: |
+
+
+Icons by [Icons8](https://icons8.com/). 
