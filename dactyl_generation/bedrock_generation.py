@@ -78,12 +78,12 @@ class BedrockClient(BatchClient):
         original_prompts = prompts_df[PROMPT].to_list()
         prompts_df_copy = pd.DataFrame(prompts_df)
         prompts_df_copy[PROMPT] = prompts_df_copy[PROMPT].apply(lambda messages: BedrockClient.format_llama_prompt(messages))
-        messages = prompts_df_copy.to_dict(orient="records")
+        messages = prompts_df_copy.drop(columns=[RECORDID]).to_dict(orient="records")
 
         rows = list()
         for i in range(len(messages)):
             rows.append({
-                RECORDID: f"CALL{str(i).zfill(7)}",
+                RECORDID: prompts_df_copy[RECORDID].values[i],
                 MODELINPUT:messages[i]
             }
             )
@@ -97,10 +97,7 @@ class BedrockClient(BatchClient):
 
     def create_batch_job(self, prompts_df: pd.DataFrame, s3_input_path: str, s3_output_path: str, model: str,  job_name: str) -> dict:
         """
-        Creates batch job for Bedrock models.
-
-        !!! warning
-            This function has not been tested yet!
+        Creates batch job for Bedrock Llama models.
 
         Args:
             prompts_df: Dataframe of OpenAI-style prompts.
@@ -175,7 +172,6 @@ class BedrockClient(BatchClient):
         if target_file:
             output_df = pd.read_json(f"s3://{bucket_name}/"+target_file, lines=True)
             rows = list()
-            print(output_df.head())
             for _, row in output_df.iterrows():
                 entry = dict()
                 entry[TEXT] = row[MODEL_OUTPUT][GENERATION].strip()
@@ -184,8 +180,9 @@ class BedrockClient(BatchClient):
 
             outputs = pd.DataFrame(rows)
             inputs = pd.DataFrame(data[INPUT_FILE])
+            outputs[RECORDID] = outputs[RECORDID].astype(str)
             outputs = outputs.merge(inputs, how='left', on=RECORDID)
-            outputs = outputs.drop(columns=RECORDID)
+            #outputs = outputs.drop(columns=RECORDID)
             outputs[TIMESTAMP] = data[TIMESTAMP]
             return outputs
         else:

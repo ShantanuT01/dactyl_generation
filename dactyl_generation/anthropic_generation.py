@@ -4,9 +4,6 @@ Generates texts with using the Anthropic Batch API.
 import copy
 
 import anthropic
-import dotenv
-import os
-import numpy as np
 from anthropic.types.message_create_params import MessageCreateParamsNonStreaming
 from anthropic.types.messages.batch_create_params import Request
 import json
@@ -17,7 +14,7 @@ from datetime import datetime, timezone
 
 from dactyl_generation.constants import *
 from dactyl_generation.batchclient import BatchClient
-dotenv.load_dotenv()
+
 
 
 
@@ -79,8 +76,7 @@ class AnthropicClient(BatchClient):
             requests: list of requests
         """
         requests = list()
-        calls = prompts_df.to_dict(orient="records")
-        digits_length = int(np.log10(len(calls))) + 1
+        calls = prompts_df.drop(columns=[CUSTOM_ID]).to_dict(orient="records")
         for i, call in enumerate(calls):
             system_messages = list()
             normal_messages = list()
@@ -96,7 +92,7 @@ class AnthropicClient(BatchClient):
             del message_parameters[PROMPT]
             # each individual request maps to one few shot set
             request = Request(
-                custom_id=f"request-{str(i).zfill(digits_length)}",
+                custom_id=prompts_df[CUSTOM_ID].values[i],
                 params=MessageCreateParamsNonStreaming(
                     **message_parameters
                 )

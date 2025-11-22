@@ -1,16 +1,13 @@
 """
 Generates texts with using the OpenAI Batch API.
 """
-import os
+
 from openai import OpenAI
-from dotenv import load_dotenv
 from dactyl_generation.constants import *
 from dactyl_generation.batchclient import BatchClient
 import pandas as pd
 import json
-import numpy as np
 from io import BytesIO
-from typing import List, Any
 from datetime import datetime, timezone
 
 
@@ -51,12 +48,11 @@ class OpenAIClient(BatchClient):
            Returns:
                results: dictionary containing request information
            """
-        digits_length = int(np.log10(len(prompts_df))) + 1
         json_strs = list()
         requests = list()
-        records = prompts_df.to_dict("records")
+        records = prompts_df.drop(columns=[CUSTOM_ID]).to_dict("records")
         for i, record in enumerate(records):
-            request = OpenAIClient.create_individual_request(f"request-{str(i).zfill(digits_length)}", record)
+            request = OpenAIClient.create_individual_request(prompts_df[CUSTOM_ID].values[i], record)
             requests.append(request)
             json_strs.append(json.dumps(request))
         buffer = BytesIO(("\n".join(json_strs)).encode("utf-8"))

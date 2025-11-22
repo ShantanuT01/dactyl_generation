@@ -1,12 +1,9 @@
 """
 Generates texts with using the Mistral Batch API.
 """
-import copy
 
 import mistralai.files
 from mistralai import Mistral, File, BatchJobsOut
-from dotenv import load_dotenv
-import os
 from io import BytesIO
 import json
 import numpy as np
@@ -44,11 +41,10 @@ class MistralClient(BatchClient):
 
         buffer = BytesIO()
         list_of_requests = list()
-        messages = prompts_df.to_dict(orient="records")
-        digits_length = int(np.log10(len(prompts_df))) + 1
+        messages = prompts_df.drop(columns=[CUSTOM_ID]).to_dict(orient="records")
         for index, message_batch in enumerate(messages):
             request = {
-                CUSTOM_ID: f"request-{str(index).zfill(digits_length)}",
+                CUSTOM_ID: prompts_df[CUSTOM_ID].values[index],
                 BODY: message_batch
             }
             list_of_requests.append(request)
@@ -133,7 +129,6 @@ class MistralClient(BatchClient):
             row[TIMESTAMP] = str(datetime.fromtimestamp(response[RESPONSE][BODY][CREATED], tz=timezone.utc))
             rows.append(row)
         raw_prompts = pd.DataFrame([{**prompt[BODY], **{CUSTOM_ID: prompt[CUSTOM_ID]}} for prompt in data[PROMPTS]])
-        print(raw_prompts.head())
         generations = pd.DataFrame(rows)
         return generations.merge(raw_prompts, on=CUSTOM_ID,how="left")
 

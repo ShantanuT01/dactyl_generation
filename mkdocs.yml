@@ -28,17 +28,21 @@ markdown_extensions:
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
 nav:
   - Home: index.md
-  - Tutorial: tutorial.md
-  - DACTYL Dataset: dataset.md
-  - Prompt Schema: promptschema.md
+  - Tutorials:
+      AWS Bedrock: tutorials/bedrock_tutorial.md
+      OpenAI: tutorials/openai_tutorial.md
+      Anthropic: tutorials/anthropic_tutorial.md
+      Mistral: tutorials/mistral_tutorial.md
+      Fireworks AI: tutorials/fireworks_tutorial.md
+      Gemini: tutorials/gemini_tutorial.md
   - API Reference:
-    - Gemini Generation: API/gemini_generation.md
-    - DeepSeek Generation: API/deepseek_generation.md
-    - Anthropic Generation: API/anthropic_generation.md
-    - OpenAI Generation: API/openai_generation.md
-    - Bedrock Generation: API/bedrock_generation.md
-    - Mistral Generation: API/mistral_generation.md
-    - Quick Generation: API/quick.md
+    - Google Gemini: API/gemini_generation.md
+    - Fireworks AI: API/fireworks_generation.md
+    - Anthropic: API/anthropic_generation.md
+    - OpenAI: API/openai_generation.md
+    - Bedrock: API/bedrock_generation.md
+    - Mistral: API/mistral_generation.md
+  - DACTYL Dataset: dataset.md
 
 
 
