@@ -22,7 +22,14 @@ from dactyl_generation.batchclient import BatchClient
 
 class AnthropicClient(BatchClient):
 
-    def __init__(self, api_key, version) -> None:
+    def __init__(self, api_key: str, version: str) -> None:
+        """_summary_
+        Constructor for Anthropic client. 
+
+        Args:
+            api_key: Anthropic API key.
+            version: Anthropic API version to use. 
+        """
         super().__init__()
         self.api_key = api_key
         self.client = anthropic.Anthropic(
@@ -37,6 +44,7 @@ class AnthropicClient(BatchClient):
         """
         Converts OpenAI system message to Anthropic API system message.
         Doesn't support cache control yet!
+        
         Args:
             openai_message: dictionary containing system prompt
 
@@ -53,6 +61,7 @@ class AnthropicClient(BatchClient):
         """
         Converts Anthropic API system message to OpenAI API system message.
         Doesn't support cache control yet!
+        
         Args:
             anthropic_message: dictionary containing system prompt
 
@@ -129,6 +138,7 @@ class AnthropicClient(BatchClient):
     def get_batch_job_output(self, file_path: str) -> pd.DataFrame:
         """
         Gets batch job results using saved metadata from a local JSON file.
+        
         Args:
             file_path: local JSON file containing output of the `request_batch_job` function
 

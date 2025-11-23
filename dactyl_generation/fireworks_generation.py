@@ -50,6 +50,7 @@ class FireworksAIClient(BatchClient):
     def create_batch_job(self, batch_id: str, model: str, prompts_path: str, input_dataset_id: str, output_dataset_id: str, inference_parameters: dict) -> dict:
         """
         Creates a batch job for Fireworks AI Client.
+
         Args:
             batch_id: Name of batch job.
             model: Fireworks model.
@@ -87,6 +88,7 @@ class FireworksAIClient(BatchClient):
     def get_batch_job_output(self, file_path: str) -> pd.DataFrame:
         """
         Fetches batch job results given JSON path to object generated from `create_batch_job` function.
+        
         Args:
             file_path: File path to JSON object from `create_batch_job` function.
 

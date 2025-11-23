@@ -16,6 +16,7 @@ class OpenAIClient(BatchClient):
     def __init__(self, api_key: str) -> None:
         """
         Constructor for OpenAI Client key.
+        
         Args:
             api_key: OpenAI API key.
         """
@@ -27,6 +28,7 @@ class OpenAIClient(BatchClient):
     def create_individual_request(custom_id: str, message_body: dict) -> dict:
         """
         Creates OpenAI REST API request for a single request.
+        
         Args:
             custom_id: Custom ID of request
             message_body: dictionary of a single message. This includes the messages, max_completion_token parameters etc.
@@ -83,6 +85,7 @@ class OpenAIClient(BatchClient):
     def get_batch_job_output(self, file_path: str) -> pd.DataFrame:
         """
         Gets batch job results using saved metadata from a local JSON file.
+        
         Args:
             file_path: local JSON file containing output of the `create_batch_job` function
 

@@ -29,7 +29,8 @@ class MistralClient(BatchClient):
 
     def create_message_batch(self, file_name: str, prompts_df: pd.DataFrame) -> Tuple[List[dict], mistralai.models.UploadFileOut]:
         """
-       Creates batch of messages to send to Mistral API.
+        Creates batch of messages to send to Mistral API.
+
 
         Args:
             file_name: Name of file in Mistral API to save as.
@@ -76,6 +77,7 @@ class MistralClient(BatchClient):
     def create_batch_job(self, file_name: str, prompts_df: pd.DataFrame) -> dict:
         """
         Creates batch job for set of prompts given file name to save Mistral prompts to.
+        
         Args:
             file_name: name of file to upload to Mistral API.
             prompts_df: DataFrame containing generation prompts and parameters.
@@ -108,6 +110,7 @@ class MistralClient(BatchClient):
     def get_batch_job_output(self, file_path: str) -> pd.DataFrame:
         """
         Gets batch job results using saved metadata from a local JSON file.
+        
         Args:
             file_path: local JSON file containing output of the `create_batch_job` function
 

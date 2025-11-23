@@ -20,6 +20,7 @@ class BedrockClient(BatchClient):
     def __init__(self, role_arn: str):
         """
         Constructor for BedrockClient.
+        
         Args:
             role_arn: ARN of role to use.
         """
@@ -50,6 +51,7 @@ class BedrockClient(BatchClient):
     def format_llama_prompt(messages: List[dict]) -> str:
         """
         Formats OpenAI style message to Llama 3.2 style.
+        
         Args:
             messages: list of dictionaries containing OpenAI style messages
 
@@ -67,10 +69,10 @@ class BedrockClient(BatchClient):
     def create_jsonl_input_for_llama(prompts_df: pd.DataFrame, s3_path: str) -> pd.DataFrame:
         """
         Creates a JSONL file to upload to S3.
+        
         Args:
             prompts_df: prompt dataframe containing OpenAI style messages
             s3_path: Path to S3 bucket to save file
-            max_gen_len: maximum generation token count per request
 
         Returns:
             None
@@ -148,6 +150,7 @@ class BedrockClient(BatchClient):
     def get_batch_job_output(self, file_path: str) -> pd.DataFrame:
         """
         Fetches batch job results given JSON file.
+        
         Args:
             file_path: JSON file containing jobArn.
 

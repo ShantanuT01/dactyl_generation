@@ -12,12 +12,19 @@ import json
 
 class GoogleClient(BatchClient):
     def __init__(self, api_key: str):
+        """
+        Constructor for Google's Gemini API.
+
+        Args:
+            api_key: Gemini API key.
+        """
         super().__init__()
         self.client = genai.Client(api_key=api_key)
 
     def upload_prompts(self, jsonl_path: str, display_name:str) -> genai.types.File:
         """
         Uploads JSONL file to Google Cloud.
+        
         Args:
             jsonl_path: Local path to JSONL file containing prompts.
             display_name: Name of file on Google cloud to upload to.
@@ -29,6 +36,7 @@ class GoogleClient(BatchClient):
 
     def create_batch_job(self, jsonl_path: str, jsonl_display_name: str, model: str, batch_display_name: str) -> dict:
         """
+        Creates and starts batch job with the Gemini API. 
 
         Args:
             jsonl_path: Local path to JSONL file containing prompts.
@@ -52,6 +60,7 @@ class GoogleClient(BatchClient):
     def get_batch_job_output(self, file_path: str) -> pd.DataFrame:
         """
         Fetches batch inference results and returns as pandas DataFrame.
+        
         Args:
             file_path: JSON file containing object returned by `create_batch_job function`
 
