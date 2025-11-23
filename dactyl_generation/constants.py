@@ -40,8 +40,10 @@ MODELINPUT = "modelInput"
 RECORDID = "recordId"
 TIMESTAMP = "timestamp"
 CREATED = "created"
-
-
+DISPLAY_NAME = "display_name"
+KEY = "key"
+CANDIDATES = "candidates"
+PARTS = "parts"
 EXAMPLES = "examples"
 
 
@@ -68,3 +70,11 @@ S3_OUTPUT_DATA_CONFIG = "s3OutputDataConfig"
 S3_INPUT_DATA_CONFIG  = "s3InputDataConfig"
 MODEL_OUTPUT = "modelOutput"
 GENERATION = "generation"
+
+OUTPUT_DATASET_ID = "outputDatasetId"
+INPUT_DATASET_ID = "inputDatasetId"
+FIREWORKS_AI = "FireworksAI"
+USAGE = "usage"
+OBJECT = "object"
+ID = "id"
+

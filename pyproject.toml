@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dactyl_generation"
-version = "1.0.0"
+version = "1.1.0"
 authors = [
     { name="Shantanu Thorat"},
 ]
-description = "LLM helper package to generate AI-generated texts."
+description = "LLM helper package to generate texts using batch inference."
 readme = "README.md"
 requires-python = ">=3.9"
 classifiers = [
@@ -19,7 +19,7 @@ dependencies = [
     "anthropic",
     "litellm",
     "mistralai",
-    "numpy==1.26.4",
+    "numpy",
     "openai",
     "pandas",
     "protobuf",
