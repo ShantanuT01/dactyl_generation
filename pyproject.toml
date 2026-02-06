@@ -29,7 +29,7 @@ dependencies = [
     "typing_extensions",
     "google-generativeai",
     "boto3",
-    "together"
+    "together >=2.0.0"
 ]
 license = {text = "MIT"}
 

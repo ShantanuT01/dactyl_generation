@@ -11,5 +11,5 @@ tqdm
 typing_extensions
 google-genai
 boto3
-together
+together>=2.0.0
 
