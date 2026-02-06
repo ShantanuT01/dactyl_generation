@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dactyl_generation"
-version = "1.1.0"
+version = "1.1.1"
 authors = [
     { name="Shantanu Thorat"},
 ]
@@ -28,7 +28,8 @@ dependencies = [
     "tqdm",
     "typing_extensions",
     "google-generativeai",
-    "boto3"
+    "boto3",
+    "together"
 ]
 license = {text = "MIT"}
 

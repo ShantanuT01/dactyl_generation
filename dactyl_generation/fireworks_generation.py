@@ -24,18 +24,19 @@ class FireworksAIClient(BatchClient):
         }
         self.account_id = account_id
 
-    def create_dataset(self, jsonl_path: str, dataset_id: str) -> None:
+    def create_dataset(self, jsonl_path: str, dataset_id: str, example_count: int) -> None:
         """
         Creates and uploads a dataset to the Fireworks AI datasets endpoints.
 
         Args:
             jsonl_path: Path to local dataset of prompts.
             dataset_id: Name of dataset to upload as
+            example_count: number of prompts in dataset
 
         Returns:
 
         """
-        data_args = {"datasetId": dataset_id, "dataset": {"userUploaded":{}}}
+        data_args = {"datasetId": dataset_id, "dataset": {"userUploaded":{},"exampleCount": example_count}}
         response_for_dataset_initialization = requests.post(f"https://api.fireworks.ai/v1/accounts/{self.account_id}/datasets",headers=self.authorization_headers, json=data_args)
         response_for_dataset_initialization.raise_for_status()
 
@@ -70,7 +71,7 @@ class FireworksAIClient(BatchClient):
             new_row.update(row[BODY])
             rows.append(new_row)
         to_save_prompts = pd.DataFrame(rows)
-        self.create_dataset(prompts_path, input_dataset_id)
+        self.create_dataset(prompts_path, input_dataset_id, len(prompts_df))
 
         data = {
             MODEL: model,

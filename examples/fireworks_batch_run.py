@@ -14,7 +14,7 @@ input_file_path = "qwen3-235b-inputs.json"
 output_file_path = "qwen3-235b-outputs.json"
 
 if not os.path.exists(input_file_path):
-    results = client.create_batch_job("sample-batch","accounts/fireworks/models/qwen3-235b-a22b-instruct-2507","fireworks_prompts.jsonl","sample-input-dataset","sample-output-dataset",{})
+    results = client.create_batch_job("sample-batch","accounts/fireworks/models/qwen3-235b-a22b-instruct-2507","examples/fireworks_prompts.jsonl","sample-input-dataset","sample-output-dataset",{})
     with open(input_file_path,'w+') as f:
         json.dump(results, f, indent=4)
 else:
