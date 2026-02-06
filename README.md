@@ -26,7 +26,7 @@ We support the following LLM API providers.
 - Google (Gemini)
 - AWS Bedrock
 - Fireworks AI
-
+- Together AI
 
 
 Icons by [Icons8](https://icons8.com/). 
