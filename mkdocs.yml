@@ -35,6 +35,7 @@ nav:
       Mistral: tutorials/mistral_tutorial.md
       Fireworks AI: tutorials/fireworks_tutorial.md
       Gemini: tutorials/gemini_tutorial.md
+      Together AI: tutorials/together_tutorial.md
   - API Reference:
     - Google Gemini: API/gemini_generation.md
     - Fireworks AI: API/fireworks_generation.md
@@ -42,6 +43,7 @@ nav:
     - OpenAI: API/openai_generation.md
     - Bedrock: API/bedrock_generation.md
     - Mistral: API/mistral_generation.md
+    - Together AI: API/together_generation.md
   - DACTYL Dataset: dataset.md
 
 
